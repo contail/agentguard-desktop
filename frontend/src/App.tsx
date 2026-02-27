@@ -19,13 +19,19 @@ declare global {
           HandleApproval(id: string, action: string): Promise<string>;
           CheckForUpdate(): Promise<string>;
           UpdateDaemon(): Promise<string>;
+          GetMCPPolicy(): Promise<string>;
+          SaveMCPPolicy(policy: string): Promise<string>;
+          GetMCPAudit(): Promise<string>;
+          GetMCPClients(): Promise<string>;
+          WrapMCPClient(client: string): Promise<string>;
+          UnwrapMCPClient(client: string): Promise<string>;
         };
       };
     };
   }
 }
 
-type Tab = "monitoring" | "settings" | "approvals";
+type Tab = "monitoring" | "settings" | "approvals" | "mcp";
 
 interface DaemonStatus {
   state: string;
@@ -85,6 +91,37 @@ interface Toast {
   type: "success" | "error";
 }
 
+interface MCPPolicyData {
+  exists: boolean;
+  path: string;
+  policy?: {
+    version: string;
+    default: Record<string, any>;
+    agents?: Record<string, Record<string, any>>;
+  };
+}
+
+interface MCPAuditEntry {
+  ts: string;
+  agent?: string;
+  dir: string;
+  method: string;
+  tool?: string;
+  decision: string;
+  rule?: string;
+  pii?: number;
+}
+
+interface MCPClient {
+  name: string;
+  label: string;
+  configPath: string;
+  installed: boolean;
+  wrapped: boolean;
+  servers: number;
+  wrappedCount?: number;
+}
+
 function App() {
   const [tab, setTab] = useState<Tab>("monitoring");
   const [daemon, setDaemon] = useState<DaemonStatus>({
@@ -100,6 +137,10 @@ function App() {
   const [approvals, setApprovals] = useState<Approval[]>([]);
   const [toast, setToast] = useState<Toast | null>(null);
   const [lastUpdate, setLastUpdate] = useState<number>(0);
+  const [mcpPolicy, setMcpPolicy] = useState<MCPPolicyData | null>(null);
+  const [mcpPolicyText, setMcpPolicyText] = useState("");
+  const [mcpAudit, setMcpAudit] = useState<MCPAuditEntry[]>([]);
+  const [mcpClients, setMcpClients] = useState<MCPClient[]>([]);
 
   const showToast = useCallback((message: string, type: "success" | "error") => {
     setToast({ message, type });
@@ -150,13 +191,47 @@ function App() {
     if (Array.isArray(d)) setApprovals(d);
   }, [safeCall]);
 
+  const loadMCPPolicy = useCallback(async () => {
+    const d = await safeCall(() => window.go.main.App.GetMCPPolicy());
+    if (!d.error) {
+      setMcpPolicy(d);
+      if (d.exists && d.policy) {
+        setMcpPolicyText(JSON.stringify(d.policy, null, 2));
+      } else {
+        setMcpPolicyText("");
+      }
+    }
+  }, [safeCall]);
+
+  const loadMCPAudit = useCallback(async () => {
+    const d = await safeCall(() => window.go.main.App.GetMCPAudit());
+    if (Array.isArray(d)) setMcpAudit(d.reverse());
+  }, [safeCall]);
+
+  const loadMCPClients = useCallback(async () => {
+    const d = await safeCall(() => window.go.main.App.GetMCPClients());
+    if (Array.isArray(d)) setMcpClients(d);
+  }, [safeCall]);
+
   const refreshAll = useCallback(() => {
     loadDaemonStatus();
     loadStats();
     loadConfig();
     loadOcConfig();
     loadApprovals();
-  }, [loadDaemonStatus, loadStats, loadConfig, loadOcConfig, loadApprovals]);
+    loadMCPPolicy();
+    loadMCPAudit();
+    loadMCPClients();
+  }, [
+    loadDaemonStatus,
+    loadStats,
+    loadConfig,
+    loadOcConfig,
+    loadApprovals,
+    loadMCPPolicy,
+    loadMCPAudit,
+    loadMCPClients,
+  ]);
 
   useEffect(() => {
     refreshAll();
@@ -215,6 +290,33 @@ function App() {
     loadApprovals();
   };
 
+  const handleSaveMCPPolicy = async () => {
+    try {
+      JSON.parse(mcpPolicyText);
+    } catch {
+      showToast("Invalid JSON", "error");
+      return;
+    }
+    const r = await safeCall(() => window.go.main.App.SaveMCPPolicy(mcpPolicyText));
+    if (r.error) showToast(r.error, "error");
+    else showToast("Policy saved", "success");
+    loadMCPPolicy();
+  };
+
+  const handleWrapClient = async (client: string) => {
+    const r = await safeCall(() => window.go.main.App.WrapMCPClient(client));
+    if (r.error) showToast(r.error, "error");
+    else showToast(`${client} wrapped`, "success");
+    loadMCPClients();
+  };
+
+  const handleUnwrapClient = async (client: string) => {
+    const r = await safeCall(() => window.go.main.App.UnwrapMCPClient(client));
+    if (r.error) showToast(r.error, "error");
+    else showToast(`${client} unwrapped`, "success");
+    loadMCPClients();
+  };
+
   const timeSince = lastUpdate ? `${Math.floor((Date.now() - lastUpdate) / 1000)}s ago` : "";
   const blockRateNum = stats ? parseFloat(String(stats.blockRate).replace("%", "")) : 0;
 
@@ -259,6 +361,15 @@ function App() {
                 <path d="M9 11l3 3L22 4M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" />
               </svg>
               <span>Approvals</span>
+            </button>
+            <button
+              className={`sidebar-item ${tab === "mcp" ? "active" : ""}`}
+              onClick={() => setTab("mcp")}
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
+              </svg>
+              <span>MCP</span>
             </button>
           </div>
 
@@ -578,6 +689,214 @@ function App() {
                       )}
                     </div>
                   ))
+                )}
+              </div>
+            </>
+          )}
+          {tab === "mcp" && (
+            <>
+              <div className="page-header">
+                <h2>MCP Security Gateway</h2>
+                <button
+                  className="btn"
+                  onClick={() => {
+                    loadMCPPolicy();
+                    loadMCPAudit();
+                    loadMCPClients();
+                  }}
+                >
+                  Refresh
+                </button>
+              </div>
+
+              {/* MCP Clients */}
+              <div className="card">
+                <div className="card-header">
+                  <span className="card-title">MCP Clients</span>
+                </div>
+                {mcpClients.length === 0 ? (
+                  <div className="empty-state">No MCP clients discovered</div>
+                ) : (
+                  mcpClients.map((c) => (
+                    <div key={c.name} className="approval-card">
+                      <span
+                        className={`badge ${c.installed ? (c.wrapped ? "badge-approved" : "badge-pending") : "badge-denied"}`}
+                      >
+                        {!c.installed ? "not found" : c.wrapped ? "protected" : "unprotected"}
+                      </span>
+                      <div className="approval-info">
+                        <div className="approval-tool">{c.label}</div>
+                        <div className="approval-meta">
+                          {c.servers} server{c.servers !== 1 ? "s" : ""}
+                          {c.wrappedCount ? ` (${c.wrappedCount} wrapped)` : ""} &middot;{" "}
+                          {c.configPath}
+                        </div>
+                      </div>
+                      {c.installed && c.servers > 0 && (
+                        <div className="approval-actions">
+                          {c.wrapped ? (
+                            <button
+                              className="btn btn-danger"
+                              onClick={() => handleUnwrapClient(c.name)}
+                            >
+                              Unwrap
+                            </button>
+                          ) : (
+                            <button
+                              className="btn btn-success"
+                              onClick={() => handleWrapClient(c.name)}
+                            >
+                              Protect
+                            </button>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  ))
+                )}
+              </div>
+
+              {/* MCP Policy Editor */}
+              <div className="card">
+                <div className="card-header">
+                  <span className="card-title">Policy Editor</span>
+                  {mcpPolicy && (
+                    <span style={{ fontSize: 11, color: "var(--text-muted)" }}>
+                      {mcpPolicy.exists
+                        ? mcpPolicy.path
+                        : "No policy file — will be created on save"}
+                    </span>
+                  )}
+                </div>
+                <textarea
+                  className="form-input"
+                  style={{
+                    width: "100%",
+                    minHeight: 220,
+                    fontFamily: "'SF Mono', 'Fira Code', monospace",
+                    fontSize: 12,
+                    lineHeight: 1.5,
+                    resize: "vertical",
+                    marginBottom: 12,
+                  }}
+                  value={mcpPolicyText}
+                  onChange={(e) => setMcpPolicyText(e.target.value)}
+                  placeholder={`{\n  "version": "1",\n  "default": {\n    "denied_tools": ["bash", "write_*"],\n    "denied_paths": ["/etc/*", "~/.ssh/*"],\n    "mode": "enforce"\n  }\n}`}
+                  spellCheck={false}
+                />
+                <button className="btn btn-primary" onClick={handleSaveMCPPolicy}>
+                  Save Policy
+                </button>
+              </div>
+
+              {/* MCP Audit Log */}
+              <div className="card">
+                <div className="card-header">
+                  <span className="card-title">Audit Log</span>
+                  <span style={{ fontSize: 11, color: "var(--text-muted)" }}>
+                    Last {mcpAudit.length} entries
+                  </span>
+                </div>
+                {mcpAudit.length === 0 ? (
+                  <div className="empty-state">No audit entries yet</div>
+                ) : (
+                  <div style={{ maxHeight: 400, overflowY: "auto" }}>
+                    <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
+                      <thead>
+                        <tr style={{ borderBottom: "1px solid var(--border)" }}>
+                          <th
+                            style={{
+                              padding: "8px 6px",
+                              textAlign: "left",
+                              color: "var(--text-muted)",
+                              fontWeight: 500,
+                            }}
+                          >
+                            Time
+                          </th>
+                          <th
+                            style={{
+                              padding: "8px 6px",
+                              textAlign: "left",
+                              color: "var(--text-muted)",
+                              fontWeight: 500,
+                            }}
+                          >
+                            Tool
+                          </th>
+                          <th
+                            style={{
+                              padding: "8px 6px",
+                              textAlign: "left",
+                              color: "var(--text-muted)",
+                              fontWeight: 500,
+                            }}
+                          >
+                            Decision
+                          </th>
+                          <th
+                            style={{
+                              padding: "8px 6px",
+                              textAlign: "left",
+                              color: "var(--text-muted)",
+                              fontWeight: 500,
+                            }}
+                          >
+                            Rule
+                          </th>
+                          <th
+                            style={{
+                              padding: "8px 6px",
+                              textAlign: "left",
+                              color: "var(--text-muted)",
+                              fontWeight: 500,
+                            }}
+                          >
+                            Agent
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {mcpAudit.map((e, i) => (
+                          <tr key={i} style={{ borderBottom: "1px solid var(--border)" }}>
+                            <td
+                              style={{
+                                padding: "6px",
+                                color: "var(--text-muted)",
+                                whiteSpace: "nowrap",
+                              }}
+                            >
+                              {e.ts ? new Date(e.ts).toLocaleTimeString() : "-"}
+                            </td>
+                            <td style={{ padding: "6px", fontWeight: 500 }}>
+                              {e.tool || e.method}
+                            </td>
+                            <td style={{ padding: "6px" }}>
+                              <span
+                                className={`badge ${e.decision === "pass" ? "badge-approved" : e.decision === "block" ? "badge-denied" : "badge-pending"}`}
+                              >
+                                {e.decision}
+                              </span>
+                            </td>
+                            <td
+                              style={{
+                                padding: "6px",
+                                color: "var(--text-secondary)",
+                                fontSize: 11,
+                              }}
+                            >
+                              {e.rule || "-"}
+                            </td>
+                            <td
+                              style={{ padding: "6px", color: "var(--text-muted)", fontSize: 11 }}
+                            >
+                              {e.agent || "-"}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
                 )}
               </div>
             </>

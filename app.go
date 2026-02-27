@@ -119,6 +119,34 @@ func (a *App) HandleApproval(id, action string) string {
 	return a.postAPI(url, "")
 }
 
+// --- MCP API bindings ---
+
+func (a *App) GetMCPPolicy() string {
+	return a.fetchAPI("http://localhost:10180/api/mcp/policy")
+}
+
+func (a *App) SaveMCPPolicy(policyJSON string) string {
+	return a.postAPI("http://localhost:10180/api/mcp/policy", policyJSON)
+}
+
+func (a *App) GetMCPAudit() string {
+	return a.fetchAPI("http://localhost:10180/api/mcp/audit")
+}
+
+func (a *App) GetMCPClients() string {
+	return a.fetchAPI("http://localhost:10180/api/mcp/clients")
+}
+
+func (a *App) WrapMCPClient(client string) string {
+	body := fmt.Sprintf(`{"client":"%s","undo":false}`, client)
+	return a.postAPI("http://localhost:10180/api/mcp/wrap", body)
+}
+
+func (a *App) UnwrapMCPClient(client string) string {
+	body := fmt.Sprintf(`{"client":"%s","undo":true}`, client)
+	return a.postAPI("http://localhost:10180/api/mcp/wrap", body)
+}
+
 func (a *App) fetchAPI(url string) string {
 	client := &http.Client{Timeout: 5 * time.Second}
 	resp, err := client.Get(url)

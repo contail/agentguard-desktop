@@ -18,6 +18,18 @@ export function GetDaemonStatus() {
   return window['go']['main']['App']['GetDaemonStatus']();
 }
 
+export function GetMCPAudit() {
+  return window['go']['main']['App']['GetMCPAudit']();
+}
+
+export function GetMCPClients() {
+  return window['go']['main']['App']['GetMCPClients']();
+}
+
+export function GetMCPPolicy() {
+  return window['go']['main']['App']['GetMCPPolicy']();
+}
+
 export function GetOpenClawConfig() {
   return window['go']['main']['App']['GetOpenClawConfig']();
 }
@@ -38,6 +50,10 @@ export function SaveAgentGuardConfig(arg1) {
   return window['go']['main']['App']['SaveAgentGuardConfig'](arg1);
 }
 
+export function SaveMCPPolicy(arg1) {
+  return window['go']['main']['App']['SaveMCPPolicy'](arg1);
+}
+
 export function SaveOpenClawConfig(arg1) {
   return window['go']['main']['App']['SaveOpenClawConfig'](arg1);
 }
@@ -50,6 +66,14 @@ export function StopDaemon() {
   return window['go']['main']['App']['StopDaemon']();
 }
 
+export function UnwrapMCPClient(arg1) {
+  return window['go']['main']['App']['UnwrapMCPClient'](arg1);
+}
+
 export function UpdateDaemon() {
   return window['go']['main']['App']['UpdateDaemon']();
+}
+
+export function WrapMCPClient(arg1) {
+  return window['go']['main']['App']['WrapMCPClient'](arg1);
 }

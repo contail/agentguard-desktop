@@ -9,6 +9,12 @@ export function GetApprovals():Promise<string>;
 
 export function GetDaemonStatus():Promise<string>;
 
+export function GetMCPAudit():Promise<string>;
+
+export function GetMCPClients():Promise<string>;
+
+export function GetMCPPolicy():Promise<string>;
+
 export function GetOpenClawConfig():Promise<string>;
 
 export function GetProxyStats():Promise<string>;
@@ -19,10 +25,16 @@ export function RestartDaemon():Promise<string>;
 
 export function SaveAgentGuardConfig(arg1:string):Promise<string>;
 
+export function SaveMCPPolicy(arg1:string):Promise<string>;
+
 export function SaveOpenClawConfig(arg1:string):Promise<string>;
 
 export function StartDaemon():Promise<string>;
 
 export function StopDaemon():Promise<string>;
 
+export function UnwrapMCPClient(arg1:string):Promise<string>;
+
 export function UpdateDaemon():Promise<string>;
+
+export function WrapMCPClient(arg1:string):Promise<string>;
