@@ -247,6 +247,19 @@ function App() {
     };
   }, [refreshAll, loadStats, loadDaemonStatus]);
 
+  useEffect(() => {
+    if (tab === "settings") {
+      loadConfig();
+      loadOcConfig();
+    } else if (tab === "mcp") {
+      loadMCPPolicy();
+      loadMCPAudit();
+      loadMCPClients();
+    } else if (tab === "approvals") {
+      loadApprovals();
+    }
+  }, [tab, loadConfig, loadOcConfig, loadMCPPolicy, loadMCPAudit, loadMCPClients, loadApprovals]);
+
   const handleStartDaemon = async () => {
     const r = await safeCall(() => window.go.main.App.StartDaemon());
     if (r.error) showToast(r.error, "error");
@@ -539,13 +552,21 @@ function App() {
             </>
           )}
 
-          {tab === "settings" && config && (
+          {tab === "settings" && (
             <>
               <div className="page-header">
                 <h2>Settings</h2>
               </div>
 
-              <div className="card">
+              {!config && (
+                <div className="card">
+                  <div className="empty-state">
+                    Start the daemon to load configuration
+                  </div>
+                </div>
+              )}
+
+              {config && (<><div className="card">
                 <div className="card-header">
                   <span className="card-title">AgentGuard Configuration</span>
                 </div>
@@ -663,7 +684,7 @@ function App() {
                 <button className="btn btn-primary" onClick={handleSaveOcConfig}>
                   Save OpenClaw Settings
                 </button>
-              </div>
+              </div></>)}
 
               {/* Updates */}
               <div className="card">

@@ -34,11 +34,8 @@ func main() {
 			app,
 		},
 		Mac: &mac.Options{
-			TitleBar: &mac.TitleBar{
-				TitlebarAppearsTransparent: true,
-				HideTitle:                 true,
-				FullSizeContent:           true,
-			},
+			TitleBar:             mac.TitleBarDefault(),
+			WebviewIsTransparent: true,
 			About: &mac.AboutInfo{
 				Title:   "AgentGuard Desktop",
 				Message: "Reverse proxy firewall + LLM Gateway for AI agents",
