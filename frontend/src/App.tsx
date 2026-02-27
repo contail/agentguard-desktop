@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { BrowserOpenURL } from "../wailsjs/runtime/runtime";
 import "./style.css";
 
 declare global {
@@ -141,6 +142,9 @@ function App() {
   const [mcpPolicyText, setMcpPolicyText] = useState("");
   const [mcpAudit, setMcpAudit] = useState<MCPAuditEntry[]>([]);
   const [mcpClients, setMcpClients] = useState<MCPClient[]>([]);
+  const [updateInfo, setUpdateInfo] = useState<any>(null);
+  const [updateChecking, setUpdateChecking] = useState(false);
+  const [updating, setUpdating] = useState(false);
 
   const showToast = useCallback((message: string, type: "success" | "error") => {
     setToast({ message, type });
@@ -288,6 +292,23 @@ function App() {
     if (r.error) showToast(r.error, "error");
     else showToast(`Approval ${action}d`, "success");
     loadApprovals();
+  };
+
+  const handleCheckUpdate = async () => {
+    setUpdateChecking(true);
+    const r = await safeCall(() => window.go.main.App.CheckForUpdate());
+    setUpdateInfo(r);
+    setUpdateChecking(false);
+  };
+
+  const handleUpdateCore = async () => {
+    setUpdating(true);
+    const r = await safeCall(() => window.go.main.App.UpdateDaemon());
+    if (r.error) showToast(r.error, "error");
+    else showToast(`Updated to ${r.version}`, "success");
+    setUpdating(false);
+    handleCheckUpdate();
+    loadDaemonStatus();
   };
 
   const handleSaveMCPPolicy = async () => {
@@ -642,6 +663,83 @@ function App() {
                 <button className="btn btn-primary" onClick={handleSaveOcConfig}>
                   Save OpenClaw Settings
                 </button>
+              </div>
+
+              {/* Updates */}
+              <div className="card">
+                <div className="card-header">
+                  <span className="card-title">Updates</span>
+                  <button className="btn" onClick={handleCheckUpdate} disabled={updateChecking}>
+                    {updateChecking ? "Checking..." : "Check for Updates"}
+                  </button>
+                </div>
+
+                {!updateInfo ? (
+                  <div className="empty-state">
+                    Click "Check for Updates" to scan for new versions
+                  </div>
+                ) : updateInfo.error ? (
+                  <div className="empty-state" style={{ color: "var(--danger)" }}>
+                    {updateInfo.error}
+                  </div>
+                ) : (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                    {/* Core binary */}
+                    <div className="approval-card">
+                      <span
+                        className={`badge ${updateInfo.coreUpdateAvailable ? "badge-pending" : "badge-approved"}`}
+                      >
+                        {updateInfo.coreUpdateAvailable ? "update available" : "up to date"}
+                      </span>
+                      <div className="approval-info">
+                        <div className="approval-tool">AgentGuard Core</div>
+                        <div className="approval-meta">
+                          Installed: v{updateInfo.coreLocal || "?"} &middot; Latest:{" "}
+                          {updateInfo.coreRemote || "?"}
+                          {updateInfo.coreError && ` (error: ${updateInfo.coreError})`}
+                        </div>
+                      </div>
+                      {updateInfo.coreUpdateAvailable && (
+                        <div className="approval-actions">
+                          <button
+                            className="btn btn-primary"
+                            onClick={handleUpdateCore}
+                            disabled={updating}
+                          >
+                            {updating ? "Updating..." : "Update Now"}
+                          </button>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Desktop app */}
+                    <div className="approval-card">
+                      <span
+                        className={`badge ${updateInfo.desktopUpdateAvailable ? "badge-pending" : "badge-approved"}`}
+                      >
+                        {updateInfo.desktopUpdateAvailable ? "update available" : "up to date"}
+                      </span>
+                      <div className="approval-info">
+                        <div className="approval-tool">AgentGuard Desktop</div>
+                        <div className="approval-meta">
+                          Installed: v{updateInfo.appVersion || "?"} &middot; Latest:{" "}
+                          {updateInfo.desktopRemote || "?"}
+                          {updateInfo.desktopError && ` (error: ${updateInfo.desktopError})`}
+                        </div>
+                      </div>
+                      {updateInfo.desktopUpdateAvailable && updateInfo.desktopDownloadURL && (
+                        <div className="approval-actions">
+                          <button
+                            className="btn btn-primary"
+                            onClick={() => BrowserOpenURL(updateInfo.desktopDownloadURL)}
+                          >
+                            Download
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
             </>
           )}

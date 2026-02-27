@@ -10,6 +10,8 @@ import (
 	"time"
 )
 
+const AppVersion = "1.0.0"
+
 type App struct {
 	ctx    context.Context
 	daemon *Daemon
@@ -62,18 +64,58 @@ func (a *App) GetDaemonStatus() string {
 }
 
 func (a *App) CheckForUpdate() string {
-	local := a.daemon.localVersion()
-	remote, err := a.daemon.FetchLatestVersion()
+	result := map[string]interface{}{}
+
+	// Core binary update check
+	coreLocal := a.daemon.localVersion()
+	coreRemote, err := a.daemon.FetchLatestVersion()
 	if err != nil {
-		return fmt.Sprintf(`{"error":"%s"}`, err.Error())
+		result["coreError"] = err.Error()
+	} else {
+		coreAvailable := coreLocal != "" && coreRemote != "" && ("v"+coreLocal) != coreRemote
+		result["coreLocal"] = coreLocal
+		result["coreRemote"] = coreRemote
+		result["coreUpdateAvailable"] = coreAvailable
 	}
-	result := map[string]interface{}{
-		"local":    local,
-		"remote":   remote,
-		"updateOk": local != "" && remote != "" && ("v"+local) != remote,
+
+	// Desktop app update check
+	result["appVersion"] = AppVersion
+	desktopRemote, err := fetchLatestRelease("contail/agentguard-desktop")
+	if err != nil {
+		result["desktopError"] = err.Error()
+	} else {
+		desktopAvailable := desktopRemote != "" && ("v"+AppVersion) != desktopRemote
+		result["desktopRemote"] = desktopRemote
+		result["desktopUpdateAvailable"] = desktopAvailable
+		if desktopAvailable {
+			result["desktopDownloadURL"] = fmt.Sprintf("https://github.com/contail/agentguard-desktop/releases/tag/%s", desktopRemote)
+		}
 	}
+
 	data, _ := json.Marshal(result)
 	return string(data)
+}
+
+func fetchLatestRelease(repo string) (string, error) {
+	client := &http.Client{Timeout: 10 * time.Second}
+	resp, err := client.Get(fmt.Sprintf("https://api.github.com/repos/%s/releases/latest", repo))
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode == http.StatusNotFound {
+		return "", nil
+	}
+	if resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("GitHub API returned %d", resp.StatusCode)
+	}
+	var release struct {
+		TagName string `json:"tag_name"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&release); err != nil {
+		return "", err
+	}
+	return release.TagName, nil
 }
 
 func (a *App) UpdateDaemon() string {
