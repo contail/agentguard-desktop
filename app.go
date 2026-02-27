@@ -23,11 +23,14 @@ func NewApp() *App {
 
 func (a *App) startup(ctx context.Context) {
 	a.ctx = ctx
-	go a.daemon.EnsureBinary()
+	go func() {
+		a.daemon.EnsureBinary()
+		a.daemon.Probe()
+	}()
 }
 
 func (a *App) shutdown(ctx context.Context) {
-	a.daemon.Stop()
+	// Don't stop daemon on app exit — it runs independently as a system service
 }
 
 func (a *App) StartDaemon() string {

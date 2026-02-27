@@ -9,9 +9,9 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"strconv"
 	"strings"
 	"sync"
-	"syscall"
 	"time"
 )
 
@@ -22,6 +22,10 @@ const (
 	DaemonStarting DaemonState = "starting"
 	DaemonRunning  DaemonState = "running"
 	DaemonError    DaemonState = "error"
+
+	launchAgentLabel = "io.agentguard.daemon"
+	probeURL         = "http://localhost:10180/agentguard/stats"
+	pidFileName      = "agentguard.pid"
 )
 
 type DaemonStatus struct {
@@ -30,22 +34,21 @@ type DaemonStatus struct {
 	PID     int         `json:"pid"`
 	Uptime  string      `json:"uptime"`
 	Error   string      `json:"error,omitempty"`
+	Managed bool        `json:"managed"`
 }
 
 type Daemon struct {
 	mu        sync.Mutex
-	cmd       *exec.Cmd
 	state     DaemonState
 	startTime time.Time
 	lastErr   string
 	binPath   string
 	version   string
+	managed   bool // true = we spawned via launchctl/direct, false = attached to existing
 }
 
 func NewDaemon() *Daemon {
-	return &Daemon{
-		state: DaemonStopped,
-	}
+	return &Daemon{state: DaemonStopped}
 }
 
 func (d *Daemon) dataDir() string {
@@ -67,6 +70,14 @@ func (d *Daemon) versionFilePath() string {
 	return filepath.Join(d.dataDir(), "version.txt")
 }
 
+func (d *Daemon) pidFilePath() string {
+	return filepath.Join(d.dataDir(), pidFileName)
+}
+
+func (d *Daemon) logFilePath() string {
+	return filepath.Join(d.dataDir(), "agentguard.log")
+}
+
 func (d *Daemon) localVersion() string {
 	data, err := os.ReadFile(d.versionFilePath())
 	if err != nil {
@@ -74,6 +85,183 @@ func (d *Daemon) localVersion() string {
 	}
 	return strings.TrimSpace(string(data))
 }
+
+func launchAgentDir() string {
+	home, _ := os.UserHomeDir()
+	return filepath.Join(home, "Library", "LaunchAgents")
+}
+
+func launchAgentPlistPath() string {
+	return filepath.Join(launchAgentDir(), launchAgentLabel+".plist")
+}
+
+// --- Probe: detect already-running daemon ---
+
+func (d *Daemon) Probe() bool {
+	client := &http.Client{Timeout: 2 * time.Second}
+	resp, err := client.Get(probeURL)
+	if err != nil {
+		return false
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return false
+	}
+
+	var stats struct {
+		Version string `json:"version"`
+		Uptime  string `json:"uptime"`
+	}
+	body, _ := io.ReadAll(resp.Body)
+	if json.Unmarshal(body, &stats) != nil {
+		return false
+	}
+
+	d.mu.Lock()
+	d.state = DaemonRunning
+	d.version = stats.Version
+	d.managed = false
+	d.lastErr = ""
+	d.mu.Unlock()
+
+	return true
+}
+
+// --- LaunchAgent management (macOS) ---
+
+func (d *Daemon) generatePlist() string {
+	binPath := d.binaryPath()
+	logPath := d.logFilePath()
+	return fmt.Sprintf(`<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>%s</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>%s</string>
+    </array>
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>AGENTGUARD_GATE_ENABLED</key>
+        <string>true</string>
+        <key>AGENTGUARD_LLM_ENABLED</key>
+        <string>true</string>
+    </dict>
+    <key>RunAtLoad</key>
+    <false/>
+    <key>KeepAlive</key>
+    <false/>
+    <key>StandardOutPath</key>
+    <string>%s</string>
+    <key>StandardErrorPath</key>
+    <string>%s</string>
+</dict>
+</plist>
+`, launchAgentLabel, binPath, logPath, logPath)
+}
+
+func (d *Daemon) installLaunchAgent() error {
+	if runtime.GOOS != "darwin" {
+		return nil
+	}
+	dir := launchAgentDir()
+	os.MkdirAll(dir, 0755)
+	plistPath := launchAgentPlistPath()
+	return os.WriteFile(plistPath, []byte(d.generatePlist()), 0644)
+}
+
+func (d *Daemon) uninstallLaunchAgent() {
+	if runtime.GOOS != "darwin" {
+		return
+	}
+	plistPath := launchAgentPlistPath()
+	exec.Command("launchctl", "bootout", fmt.Sprintf("gui/%d", os.Getuid()), plistPath).Run()
+	os.Remove(plistPath)
+}
+
+func (d *Daemon) startViaLaunchctl() error {
+	if err := d.installLaunchAgent(); err != nil {
+		return fmt.Errorf("failed to install LaunchAgent: %w", err)
+	}
+	plistPath := launchAgentPlistPath()
+	// Bootout first in case of stale registration
+	exec.Command("launchctl", "bootout", fmt.Sprintf("gui/%d", os.Getuid()), plistPath).Run()
+	time.Sleep(200 * time.Millisecond)
+
+	out, err := exec.Command("launchctl", "bootstrap", fmt.Sprintf("gui/%d", os.Getuid()), plistPath).CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("launchctl bootstrap failed: %s (%w)", string(out), err)
+	}
+	return nil
+}
+
+func (d *Daemon) stopViaLaunchctl() error {
+	plistPath := launchAgentPlistPath()
+	exec.Command("launchctl", "bootout", fmt.Sprintf("gui/%d", os.Getuid()), plistPath).Run()
+	return nil
+}
+
+// --- Direct start (fallback for non-macOS) ---
+
+func (d *Daemon) startDirect() error {
+	binPath := d.binaryPath()
+	cmd := exec.Command(binPath)
+	cmd.Env = append(os.Environ(),
+		"AGENTGUARD_GATE_ENABLED=true",
+		"AGENTGUARD_LLM_ENABLED=true",
+	)
+
+	logFile, err := os.OpenFile(d.logFilePath(), os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
+	if err == nil {
+		cmd.Stdout = logFile
+		cmd.Stderr = logFile
+	}
+
+	if err := cmd.Start(); err != nil {
+		return fmt.Errorf("failed to start agentguard: %w", err)
+	}
+
+	// Write PID file for tracking
+	os.WriteFile(d.pidFilePath(), []byte(strconv.Itoa(cmd.Process.Pid)), 0644)
+
+	// Detach: release the process so it survives our exit
+	cmd.Process.Release()
+
+	return nil
+}
+
+func (d *Daemon) stopDirect() error {
+	pidData, err := os.ReadFile(d.pidFilePath())
+	if err != nil {
+		return nil
+	}
+	pid, err := strconv.Atoi(strings.TrimSpace(string(pidData)))
+	if err != nil {
+		return nil
+	}
+
+	proc, err := os.FindProcess(pid)
+	if err != nil {
+		return nil
+	}
+	proc.Signal(os.Interrupt)
+
+	// Wait up to 5 seconds for graceful shutdown
+	for i := 0; i < 10; i++ {
+		time.Sleep(500 * time.Millisecond)
+		if err := proc.Signal(os.Signal(nil)); err != nil {
+			break // process gone
+		}
+	}
+
+	os.Remove(d.pidFilePath())
+	return nil
+}
+
+// --- GitHub Release ---
 
 type githubRelease struct {
 	TagName string        `json:"tag_name"`
@@ -195,109 +383,100 @@ func (d *Daemon) EnsureBinary() error {
 	return d.Download(latestTag)
 }
 
+// --- Public API ---
+
 func (d *Daemon) Start() error {
 	d.mu.Lock()
 	if d.state == DaemonRunning || d.state == DaemonStarting {
 		d.mu.Unlock()
 		return nil
 	}
-
-	if d.binPath == "" {
-		d.mu.Unlock()
-		if err := d.EnsureBinary(); err != nil {
-			return err
-		}
-		d.mu.Lock()
-	}
-
-	d.state = DaemonStarting
-	d.lastErr = ""
-	binPath := d.binPath
 	d.mu.Unlock()
 
-	cmd := exec.Command(binPath)
-	cmd.Env = append(os.Environ(),
-		"AGENTGUARD_GATE_ENABLED=true",
-		"AGENTGUARD_LLM_ENABLED=true",
-	)
-
-	logDir := d.dataDir()
-	logFile, err := os.OpenFile(
-		filepath.Join(logDir, "agentguard.log"),
-		os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644,
-	)
-	if err == nil {
-		cmd.Stdout = logFile
-		cmd.Stderr = logFile
+	// Check if daemon is already running externally
+	if d.Probe() {
+		return nil
 	}
 
-	if err := cmd.Start(); err != nil {
+	if err := d.EnsureBinary(); err != nil {
+		return err
+	}
+
+	d.mu.Lock()
+	d.state = DaemonStarting
+	d.lastErr = ""
+	d.mu.Unlock()
+
+	var err error
+	if runtime.GOOS == "darwin" {
+		err = d.startViaLaunchctl()
+	} else {
+		err = d.startDirect()
+	}
+
+	if err != nil {
 		d.mu.Lock()
 		d.state = DaemonError
 		d.lastErr = err.Error()
 		d.mu.Unlock()
-		return fmt.Errorf("failed to start agentguard: %w", err)
+		return err
+	}
+
+	// Wait for daemon to become healthy
+	for i := 0; i < 20; i++ {
+		time.Sleep(250 * time.Millisecond)
+		if d.Probe() {
+			d.mu.Lock()
+			d.managed = true
+			d.startTime = time.Now()
+			d.mu.Unlock()
+			return nil
+		}
 	}
 
 	d.mu.Lock()
-	d.cmd = cmd
-	d.state = DaemonRunning
-	d.startTime = time.Now()
+	d.state = DaemonError
+	d.lastErr = "daemon started but not responding after 5s"
 	d.mu.Unlock()
-
-	go func() {
-		err := cmd.Wait()
-		d.mu.Lock()
-		d.state = DaemonStopped
-		if err != nil {
-			d.lastErr = err.Error()
-			d.state = DaemonError
-		}
-		d.cmd = nil
-		d.mu.Unlock()
-		if logFile != nil {
-			logFile.Close()
-		}
-	}()
-
-	return nil
+	return fmt.Errorf("daemon started but not responding")
 }
 
 func (d *Daemon) Stop() error {
 	d.mu.Lock()
-	cmd := d.cmd
-	d.mu.Unlock()
-
-	if cmd == nil || cmd.Process == nil {
+	if d.state != DaemonRunning {
+		d.mu.Unlock()
 		return nil
 	}
+	d.mu.Unlock()
 
-	if runtime.GOOS == "windows" {
-		return cmd.Process.Kill()
-	}
-	cmd.Process.Signal(syscall.SIGTERM)
-
-	done := make(chan struct{})
-	go func() {
-		cmd.Process.Wait()
-		close(done)
-	}()
-
-	select {
-	case <-done:
-	case <-time.After(5 * time.Second):
-		cmd.Process.Kill()
+	if runtime.GOOS == "darwin" {
+		d.stopViaLaunchctl()
+	} else {
+		d.stopDirect()
 	}
 
 	d.mu.Lock()
 	d.state = DaemonStopped
-	d.cmd = nil
+	d.managed = false
+	d.lastErr = ""
 	d.mu.Unlock()
 
 	return nil
 }
 
 func (d *Daemon) Status() DaemonStatus {
+	// Always probe to get fresh state
+	if d.Probe() {
+		// already updated inside Probe()
+	} else {
+		d.mu.Lock()
+		if d.state == DaemonRunning {
+			d.state = DaemonStopped
+			d.managed = false
+		}
+		d.mu.Unlock()
+	}
+
 	d.mu.Lock()
 	defer d.mu.Unlock()
 
@@ -305,15 +484,11 @@ func (d *Daemon) Status() DaemonStatus {
 		State:   d.state,
 		Version: d.version,
 		Error:   d.lastErr,
-	}
-
-	if d.cmd != nil && d.cmd.Process != nil {
-		status.PID = d.cmd.Process.Pid
+		Managed: d.managed,
 	}
 
 	if d.state == DaemonRunning && !d.startTime.IsZero() {
-		dur := time.Since(d.startTime)
-		status.Uptime = formatDuration(dur)
+		status.Uptime = formatDuration(time.Since(d.startTime))
 	}
 
 	return status
