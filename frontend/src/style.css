@@ -21,6 +21,7 @@
   --radius: 10px;
   --radius-sm: 6px;
   --shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  --focus-ring: 0 0 0 2px var(--accent);
 }
 
 * {
@@ -48,7 +49,20 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* App header bar */
+/* Screen-reader only utility */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ========================= App header bar ========================= */
 .titlebar {
   height: 38px;
   display: flex;
@@ -88,13 +102,13 @@ body {
   border-radius: 8px;
 }
 
-/* Layout */
+/* ========================= Layout ========================= */
 .app-layout {
   display: flex;
   height: calc(100% - 38px);
 }
 
-/* Sidebar */
+/* ========================= Sidebar ========================= */
 .sidebar {
   width: 200px;
   background: var(--bg-secondary);
@@ -161,7 +175,7 @@ body {
   border-top: 1px solid var(--border);
 }
 
-/* Main content */
+/* ========================= Main content ========================= */
 .main-content {
   flex: 1;
   overflow-y: auto;
@@ -181,7 +195,12 @@ body {
   border-radius: 3px;
 }
 
-/* Page header */
+/* ========================= Tab content animation ========================= */
+.tab-content {
+  animation: fadeIn 0.2s ease;
+}
+
+/* ========================= Page header ========================= */
 .page-header {
   display: flex;
   align-items: center;
@@ -200,13 +219,24 @@ body {
   color: var(--text-muted);
 }
 
-/* Cards */
+.page-header__controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* ========================= Cards ========================= */
 .card {
   background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: var(--radius);
   padding: 20px;
   margin-bottom: 16px;
+  transition: border-color 0.15s;
+}
+
+.card:hover {
+  border-color: var(--border-hover);
 }
 
 .card-header {
@@ -224,7 +254,12 @@ body {
   letter-spacing: 0.5px;
 }
 
-/* Stats grid */
+.card-header__hint {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+/* ========================= Stats grid ========================= */
 .stats-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
@@ -236,6 +271,12 @@ body {
   border-radius: 8px;
   padding: 14px;
   text-align: center;
+  transition: transform 0.15s, background 0.15s;
+}
+
+.stat-box:hover {
+  transform: translateY(-1px);
+  background: #111122;
 }
 
 .stat-label {
@@ -247,11 +288,19 @@ body {
   margin-bottom: 6px;
 }
 
+.stat-label--inline {
+  margin-bottom: 0;
+}
+
 .stat-value {
   font-size: 24px;
   font-weight: 700;
   color: var(--text-primary);
   font-variant-numeric: tabular-nums;
+}
+
+.stat-value--text {
+  font-size: 16px;
 }
 
 .stat-value.danger {
@@ -264,7 +313,7 @@ body {
   color: var(--warning);
 }
 
-/* Progress bar */
+/* ========================= Progress bar ========================= */
 .progress-container {
   grid-column: 1 / -1;
   background: var(--bg-primary);
@@ -285,17 +334,29 @@ body {
 
 .progress-fill {
   height: 100%;
-  background: linear-gradient(90deg, var(--accent), var(--danger));
+  background: linear-gradient(90deg, var(--success), var(--warning), var(--danger));
   border-radius: 3px;
   transition: width 0.6s ease;
 }
 
-/* Daemon control */
+.progress-value {
+  font-size: 14px;
+  font-weight: 700;
+  min-width: 45px;
+  text-align: right;
+}
+
+/* ========================= Daemon control ========================= */
 .daemon-control {
   display: flex;
   align-items: center;
   gap: 12px;
   padding: 12px 0;
+}
+
+.daemon-state-text {
+  font-size: 11px;
+  color: var(--text-muted);
 }
 
 .daemon-status {
@@ -338,7 +399,7 @@ body {
   }
 }
 
-/* Buttons */
+/* ========================= Buttons ========================= */
 .btn {
   display: inline-flex;
   align-items: center;
@@ -359,6 +420,33 @@ body {
   background: var(--bg-primary);
   border-color: var(--border-hover);
   color: var(--text-primary);
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn--full-width {
+  width: 100%;
+  justify-content: center;
+}
+
+.btn--loading {
+  position: relative;
+  color: transparent !important;
+  pointer-events: none;
+}
+
+.btn--loading::after {
+  content: "";
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
 }
 
 .btn-primary {
@@ -394,7 +482,7 @@ body {
   color: #fff;
 }
 
-/* Form */
+/* ========================= Form ========================= */
 .form-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -406,6 +494,10 @@ body {
   display: flex;
   flex-direction: column;
   gap: 5px;
+}
+
+.form-field--mb {
+  margin-bottom: 16px;
 }
 
 .form-label {
@@ -453,7 +545,46 @@ body {
   border-color: var(--accent);
 }
 
-/* Toggle */
+/* ========================= Info row (read-only settings) ========================= */
+.info-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 10px;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+
+.info-row__label {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.info-row__value {
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+/* ========================= Settings section title ========================= */
+.settings-section-title {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 12px;
+  margin-top: 20px;
+}
+
+.settings-section-title:first-child {
+  margin-top: 0;
+}
+
+/* ========================= Toggle ========================= */
 .toggle-row {
   display: flex;
   align-items: center;
@@ -505,7 +636,7 @@ body {
   height: 14px;
   left: 3px;
   top: 3px;
-  background: #888;
+  background: var(--text-muted);
   border-radius: 50%;
   transition: all 0.2s;
 }
@@ -515,7 +646,51 @@ body {
   background: #fff;
 }
 
-/* Approvals */
+/* ========================= List item card (generalized approval-card) ========================= */
+.list-item-card {
+  background: var(--bg-primary);
+  border: 1px solid transparent;
+  border-radius: 8px;
+  padding: 14px 16px;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  transition: border-color 0.15s;
+}
+
+.list-item-card:hover {
+  border-color: var(--border);
+}
+
+.list-item-card__badge {
+  flex-shrink: 0;
+}
+
+.list-item-card__body {
+  flex: 1;
+  min-width: 0;
+}
+
+.list-item-card__title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.list-item-card__meta {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 3px;
+}
+
+.list-item-card__actions {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+/* Legacy approval-card (kept for backward compatibility during transition) */
 .approval-card {
   background: var(--bg-primary);
   border-radius: 8px;
@@ -547,7 +722,14 @@ body {
   gap: 6px;
 }
 
-/* Badge */
+/* ========================= Update list ========================= */
+.update-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* ========================= Badge ========================= */
 .badge {
   display: inline-block;
   padding: 2px 8px;
@@ -556,6 +738,7 @@ body {
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.3px;
+  white-space: nowrap;
 }
 
 .badge-pending {
@@ -570,8 +753,12 @@ body {
   background: var(--danger-muted);
   color: var(--danger);
 }
+.badge-info {
+  background: rgba(99, 102, 241, 0.12);
+  color: var(--accent);
+}
 
-/* Empty state */
+/* ========================= Empty state ========================= */
 .empty-state {
   text-align: center;
   padding: 40px 20px;
@@ -579,7 +766,122 @@ body {
   font-size: 13px;
 }
 
-/* Toast notification */
+.empty-state--error {
+  color: var(--danger);
+}
+
+/* ========================= Policy editor ========================= */
+.policy-editor {
+  width: 100%;
+  min-height: 220px;
+  font-family: "SF Mono", "Fira Code", monospace;
+  font-size: 12px;
+  line-height: 1.5;
+  resize: vertical;
+  margin-bottom: 12px;
+}
+
+/* ========================= Audit table ========================= */
+.audit-scroll {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.audit-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.audit-th {
+  padding: 8px 6px;
+  text-align: left;
+  color: var(--text-muted);
+  font-weight: 500;
+  border-bottom: 1px solid var(--border);
+}
+
+.audit-td {
+  padding: 6px;
+  border-bottom: 1px solid var(--border);
+}
+
+.audit-td--time {
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.audit-td--tool {
+  font-weight: 500;
+}
+
+.audit-td--rule {
+  color: var(--text-secondary);
+  font-size: 11px;
+}
+
+.audit-td--agent {
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+/* ========================= Confirm dialog ========================= */
+.confirm-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  animation: fadeIn 0.15s ease;
+}
+
+.confirm-dialog {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 24px;
+  max-width: 400px;
+  width: 90%;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+}
+
+.confirm-dialog__title {
+  font-size: 16px;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.confirm-dialog__message {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-bottom: 20px;
+  line-height: 1.5;
+}
+
+.confirm-dialog__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+/* ========================= Loading spinner ========================= */
+.loading-spinner-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+}
+
+.loading-spinner {
+  border: 2px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+
+/* ========================= Toast notification ========================= */
 .toast {
   position: fixed;
   top: 50px;
@@ -602,6 +904,20 @@ body {
   color: #fecaca;
 }
 
+.toast--exiting {
+  animation: slideOut 0.25s ease forwards;
+}
+
+/* ========================= Animations ========================= */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
 @keyframes slideIn {
   from {
     transform: translateX(100%);
@@ -613,7 +929,42 @@ body {
   }
 }
 
-/* Responsive within the desktop window */
+@keyframes slideOut {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ========================= Accessibility: focus-visible ========================= */
+.btn:focus-visible,
+.sidebar-item:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+.form-input:focus-visible,
+.form-select:focus-visible {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: var(--focus-ring);
+}
+
+.toggle input:focus-visible + .toggle-track {
+  box-shadow: var(--focus-ring);
+}
+
+/* ========================= Responsive ========================= */
 @media (max-width: 900px) {
   .sidebar {
     width: 52px;
