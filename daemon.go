@@ -12,6 +12,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"syscall"
 	"time"
 )
 
@@ -23,9 +24,8 @@ const (
 	DaemonRunning  DaemonState = "running"
 	DaemonError    DaemonState = "error"
 
-	launchAgentLabel = "io.agentguard.daemon"
-	probeURL         = "http://localhost:10180/agentguard/stats"
-	pidFileName      = "agentguard.pid"
+	probeURL    = "http://localhost:10180/agentguard/stats"
+	pidFileName = "agentguard.pid"
 )
 
 type DaemonStatus struct {
@@ -86,15 +86,6 @@ func (d *Daemon) localVersion() string {
 	return strings.TrimSpace(string(data))
 }
 
-func launchAgentDir() string {
-	home, _ := os.UserHomeDir()
-	return filepath.Join(home, "Library", "LaunchAgents")
-}
-
-func launchAgentPlistPath() string {
-	return filepath.Join(launchAgentDir(), launchAgentLabel+".plist")
-}
-
 // --- Probe: detect already-running daemon ---
 
 func (d *Daemon) Probe() bool {
@@ -128,83 +119,7 @@ func (d *Daemon) Probe() bool {
 	return true
 }
 
-// --- LaunchAgent management (macOS) ---
-
-func (d *Daemon) generatePlist() string {
-	binPath := d.binaryPath()
-	logPath := d.logFilePath()
-	return fmt.Sprintf(`<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
-<dict>
-    <key>Label</key>
-    <string>%s</string>
-    <key>ProgramArguments</key>
-    <array>
-        <string>%s</string>
-    </array>
-    <key>EnvironmentVariables</key>
-    <dict>
-        <key>AGENTGUARD_GATE_ENABLED</key>
-        <string>true</string>
-        <key>AGENTGUARD_LLM_ENABLED</key>
-        <string>true</string>
-    </dict>
-    <key>RunAtLoad</key>
-    <false/>
-    <key>KeepAlive</key>
-    <false/>
-    <key>StandardOutPath</key>
-    <string>%s</string>
-    <key>StandardErrorPath</key>
-    <string>%s</string>
-</dict>
-</plist>
-`, launchAgentLabel, binPath, logPath, logPath)
-}
-
-func (d *Daemon) installLaunchAgent() error {
-	if runtime.GOOS != "darwin" {
-		return nil
-	}
-	dir := launchAgentDir()
-	os.MkdirAll(dir, 0755)
-	plistPath := launchAgentPlistPath()
-	return os.WriteFile(plistPath, []byte(d.generatePlist()), 0644)
-}
-
-func (d *Daemon) uninstallLaunchAgent() {
-	if runtime.GOOS != "darwin" {
-		return
-	}
-	plistPath := launchAgentPlistPath()
-	exec.Command("launchctl", "bootout", fmt.Sprintf("gui/%d", os.Getuid()), plistPath).Run()
-	os.Remove(plistPath)
-}
-
-func (d *Daemon) startViaLaunchctl() error {
-	if err := d.installLaunchAgent(); err != nil {
-		return fmt.Errorf("failed to install LaunchAgent: %w", err)
-	}
-	plistPath := launchAgentPlistPath()
-	// Bootout first in case of stale registration
-	exec.Command("launchctl", "bootout", fmt.Sprintf("gui/%d", os.Getuid()), plistPath).Run()
-	time.Sleep(200 * time.Millisecond)
-
-	out, err := exec.Command("launchctl", "bootstrap", fmt.Sprintf("gui/%d", os.Getuid()), plistPath).CombinedOutput()
-	if err != nil {
-		return fmt.Errorf("launchctl bootstrap failed: %s (%w)", string(out), err)
-	}
-	return nil
-}
-
-func (d *Daemon) stopViaLaunchctl() error {
-	plistPath := launchAgentPlistPath()
-	exec.Command("launchctl", "bootout", fmt.Sprintf("gui/%d", os.Getuid()), plistPath).Run()
-	return nil
-}
-
-// --- Direct start (fallback for non-macOS) ---
+// --- Process management (detached, survives app exit) ---
 
 func (d *Daemon) startDirect() error {
 	binPath := d.binaryPath()
@@ -247,13 +162,12 @@ func (d *Daemon) stopDirect() error {
 	if err != nil {
 		return nil
 	}
-	proc.Signal(os.Interrupt)
+	proc.Signal(syscall.SIGTERM)
 
-	// Wait up to 5 seconds for graceful shutdown
 	for i := 0; i < 10; i++ {
 		time.Sleep(500 * time.Millisecond)
-		if err := proc.Signal(os.Signal(nil)); err != nil {
-			break // process gone
+		if err := syscall.Kill(pid, 0); err != nil {
+			break
 		}
 	}
 
@@ -407,12 +321,7 @@ func (d *Daemon) Start() error {
 	d.lastErr = ""
 	d.mu.Unlock()
 
-	var err error
-	if runtime.GOOS == "darwin" {
-		err = d.startViaLaunchctl()
-	} else {
-		err = d.startDirect()
-	}
+	err := d.startDirect()
 
 	if err != nil {
 		d.mu.Lock()
@@ -449,11 +358,7 @@ func (d *Daemon) Stop() error {
 	}
 	d.mu.Unlock()
 
-	if runtime.GOOS == "darwin" {
-		d.stopViaLaunchctl()
-	} else {
-		d.stopDirect()
-	}
+	d.stopDirect()
 
 	d.mu.Lock()
 	d.state = DaemonStopped
