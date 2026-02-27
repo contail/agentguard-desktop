@@ -47,11 +47,7 @@ export function McpTab({
             <ListItemCard
               key={c.name}
               badge={
-                <Badge
-                  variant={
-                    !c.installed ? "denied" : c.wrapped ? "approved" : "pending"
-                  }
-                >
+                <Badge variant={!c.installed ? "denied" : c.wrapped ? "approved" : "pending"}>
                   {!c.installed ? "not found" : c.wrapped ? "protected" : "unprotected"}
                 </Badge>
               }
@@ -59,24 +55,17 @@ export function McpTab({
               meta={
                 <>
                   {c.servers} server{c.servers !== 1 ? "s" : ""}
-                  {c.wrappedCount ? ` (${c.wrappedCount} wrapped)` : ""} &middot;{" "}
-                  {c.configPath}
+                  {c.wrappedCount ? ` (${c.wrappedCount} wrapped)` : ""} &middot; {c.configPath}
                 </>
               }
               actions={
                 c.installed && c.servers > 0 ? (
                   c.wrapped ? (
-                    <button
-                      className="btn btn-danger"
-                      onClick={() => onUnwrapClient(c.name)}
-                    >
+                    <button className="btn btn-danger" onClick={() => onUnwrapClient(c.name)}>
                       Unwrap
                     </button>
                   ) : (
-                    <button
-                      className="btn btn-success"
-                      onClick={() => onWrapClient(c.name)}
-                    >
+                    <button className="btn btn-success" onClick={() => onWrapClient(c.name)}>
                       Protect
                     </button>
                   )
@@ -93,9 +82,7 @@ export function McpTab({
         headerRight={
           policy && (
             <span className="card-header__hint">
-              {policy.exists
-                ? policy.path
-                : "No policy file — will be created on save"}
+              {policy.exists ? policy.path : "No policy file — will be created on save"}
             </span>
           )
         }
@@ -120,9 +107,7 @@ export function McpTab({
       {/* MCP Audit Log */}
       <Card
         title="Audit Log"
-        headerRight={
-          <span className="card-header__hint">Last {audit.length} entries</span>
-        }
+        headerRight={<span className="card-header__hint">Last {audit.length} entries</span>}
       >
         {audit.length === 0 ? (
           <EmptyState message="No audit entries yet" />
@@ -131,11 +116,21 @@ export function McpTab({
             <table className="audit-table">
               <thead>
                 <tr>
-                  <th className="audit-th" scope="col">Time</th>
-                  <th className="audit-th" scope="col">Tool</th>
-                  <th className="audit-th" scope="col">Decision</th>
-                  <th className="audit-th" scope="col">Rule</th>
-                  <th className="audit-th" scope="col">Agent</th>
+                  <th className="audit-th" scope="col">
+                    Time
+                  </th>
+                  <th className="audit-th" scope="col">
+                    Tool
+                  </th>
+                  <th className="audit-th" scope="col">
+                    Decision
+                  </th>
+                  <th className="audit-th" scope="col">
+                    Rule
+                  </th>
+                  <th className="audit-th" scope="col">
+                    Agent
+                  </th>
                 </tr>
               </thead>
               <tbody>

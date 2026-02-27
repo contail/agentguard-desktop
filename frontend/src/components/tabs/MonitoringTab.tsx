@@ -32,7 +32,13 @@ export function MonitoringTab({
       </PageHeader>
 
       {loading && !stats && <LoadingSpinner />}
-      {error && !stats && <EmptyState message={error} variant="error" action={{ label: "Retry", onClick: onRefresh }} />}
+      {error && !stats && (
+        <EmptyState
+          message={error}
+          variant="error"
+          action={{ label: "Retry", onClick: onRefresh }}
+        />
+      )}
 
       {stats && (
         <>
@@ -60,10 +66,22 @@ export function MonitoringTab({
           <Card title="LLM Gateway">
             <div className="stats-grid">
               <StatBox label="Total" value={stats.llmGateway?.total ?? "-"} />
-              <StatBox label="Flagged" value={stats.llmGateway?.flagged ?? "-"} colorClass="danger" />
-              <StatBox label="Blocked" value={stats.llmGateway?.blocked ?? "-"} colorClass="danger" />
+              <StatBox
+                label="Flagged"
+                value={stats.llmGateway?.flagged ?? "-"}
+                colorClass="danger"
+              />
+              <StatBox
+                label="Blocked"
+                value={stats.llmGateway?.blocked ?? "-"}
+                colorClass="danger"
+              />
               <StatBox label="PII Sanitized" value={stats.llmGateway?.piiSanitized ?? "-"} />
-              <StatBox label="Confirmed" value={stats.llmGateway?.confirmed ?? "-"} colorClass="success" />
+              <StatBox
+                label="Confirmed"
+                value={stats.llmGateway?.confirmed ?? "-"}
+                colorClass="success"
+              />
             </div>
           </Card>
 

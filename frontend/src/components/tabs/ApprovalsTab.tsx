@@ -38,7 +38,11 @@ export function ApprovalsTab({
       <Card title="Pending Approvals">
         {loading && approvals.length === 0 && <LoadingSpinner />}
         {error && approvals.length === 0 && (
-          <EmptyState message={error} variant="error" action={{ label: "Retry", onClick: onRefresh }} />
+          <EmptyState
+            message={error}
+            variant="error"
+            action={{ label: "Retry", onClick: onRefresh }}
+          />
         )}
         {!loading && !error && approvals.length === 0 ? (
           <EmptyState message="No pending approvals" />
@@ -56,16 +60,10 @@ export function ApprovalsTab({
               actions={
                 a.status === "pending" ? (
                   <>
-                    <button
-                      className="btn btn-success"
-                      onClick={() => onApproval(a.id, "approve")}
-                    >
+                    <button className="btn btn-success" onClick={() => onApproval(a.id, "approve")}>
                       Approve
                     </button>
-                    <button
-                      className="btn btn-danger"
-                      onClick={() => onApproval(a.id, "deny")}
-                    >
+                    <button className="btn btn-danger" onClick={() => onApproval(a.id, "deny")}>
                       Deny
                     </button>
                   </>
