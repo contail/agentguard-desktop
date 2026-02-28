@@ -138,6 +138,40 @@ export function SettingsTab({
 
               <div className="flex flex-col gap-1.5">
                 <span className="flex flex-col text-[13px] font-medium text-content-primary tracking-tight">
+                  Gate URL
+                  <span className="text-[11px] text-content-muted font-normal mt-0.5">
+                    Remote trust evaluation API endpoint.
+                  </span>
+                </span>
+                <input
+                  className="py-2 px-2.5 bg-surface-input border border-line rounded-sm text-content-primary text-[13px] font-sans outline-none transition-colors focus:border-accent focus-visible:ring-2 focus-visible:ring-accent"
+                  value={config.gateURL}
+                  onChange={(e) =>
+                    onConfigChange({ ...config, gateURL: e.target.value })
+                  }
+                  placeholder="http://localhost:8000"
+                />
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <span className="flex flex-col text-[13px] font-medium text-content-primary tracking-tight">
+                  Gate Timeout (ms)
+                  <span className="text-[11px] text-content-muted font-normal mt-0.5">
+                    Maximum wait time for Gate API response.
+                  </span>
+                </span>
+                <input
+                  type="number"
+                  className="py-2 px-2.5 bg-surface-input border border-line rounded-sm text-content-primary text-[13px] font-sans outline-none transition-colors focus:border-accent focus-visible:ring-2 focus-visible:ring-accent"
+                  value={config.gateTimeoutMs}
+                  onChange={(e) =>
+                    onConfigChange({ ...config, gateTimeoutMs: parseInt(e.target.value) || 0 })
+                  }
+                />
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <span className="flex flex-col text-[13px] font-medium text-content-primary tracking-tight">
                   Gate Fail Open
                   <span className="text-[11px] text-content-muted font-normal mt-0.5">
                     Allow requests if the Gate API is unreachable.
@@ -213,6 +247,40 @@ export function SettingsTab({
                     onConfigChange({ ...config, piiEnabled: v })
                   }
                   label="Toggle PII sanitization"
+                />
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <span className="flex flex-col text-[13px] font-medium text-content-primary tracking-tight">
+                  Approval Timeout (ms)
+                  <span className="text-[11px] text-content-muted font-normal mt-0.5">
+                    How long to wait for manual approval in confirm mode.
+                  </span>
+                </span>
+                <input
+                  type="number"
+                  className="py-2 px-2.5 bg-surface-input border border-line rounded-sm text-content-primary text-[13px] font-sans outline-none transition-colors focus:border-accent focus-visible:ring-2 focus-visible:ring-accent"
+                  value={config.approvalTimeoutMs}
+                  onChange={(e) =>
+                    onConfigChange({ ...config, approvalTimeoutMs: parseInt(e.target.value) || 0 })
+                  }
+                />
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <span className="flex flex-col text-[13px] font-medium text-content-primary tracking-tight">
+                  Max Body Size (bytes)
+                  <span className="text-[11px] text-content-muted font-normal mt-0.5">
+                    Maximum request body size for inbound filtering.
+                  </span>
+                </span>
+                <input
+                  type="number"
+                  className="py-2 px-2.5 bg-surface-input border border-line rounded-sm text-content-primary text-[13px] font-sans outline-none transition-colors focus:border-accent focus-visible:ring-2 focus-visible:ring-accent"
+                  value={config.maxBodySize}
+                  onChange={(e) =>
+                    onConfigChange({ ...config, maxBodySize: parseInt(e.target.value) || 0 })
+                  }
                 />
               </div>
             </div>
