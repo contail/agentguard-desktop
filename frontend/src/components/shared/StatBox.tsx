@@ -20,7 +20,7 @@ export function StatBox({
       {icon && <div className="stat-box__icon">{icon}</div>}
       <div className="stat-label">{label}</div>
       <div
-        className={`stat-value ${variant === "info" ? "stat-value--text" : ""} ${colorClass ?? ""}`}
+        className={`stat-value ${variant === "info" ? "stat-value--text" : ""} ${typeof value === "string" && value.length > 6 ? "stat-value--compact" : ""} ${colorClass ?? ""}`}
       >
         {value}
       </div>
