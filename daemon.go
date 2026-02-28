@@ -1,6 +1,7 @@
 package main
 
 import (
+	"embed"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -15,6 +16,9 @@ import (
 	"syscall"
 	"time"
 )
+
+//go:embed embedded/*
+var embeddedBinaries embed.FS
 
 type DaemonState string
 
@@ -188,8 +192,10 @@ type githubAsset struct {
 
 func platformBinaryName() string {
 	switch {
-	case runtime.GOOS == "darwin":
+	case runtime.GOOS == "darwin" && runtime.GOARCH == "arm64":
 		return "agentguard-mac-arm64"
+	case runtime.GOOS == "darwin" && runtime.GOARCH == "amd64":
+		return "agentguard-mac-amd64"
 	case runtime.GOOS == "linux" && runtime.GOARCH == "amd64":
 		return "agentguard-linux-amd64"
 	case runtime.GOOS == "windows" && runtime.GOARCH == "amd64":
@@ -276,6 +282,31 @@ func (d *Daemon) Download(version string) error {
 	return nil
 }
 
+func (d *Daemon) extractEmbeddedBinary() error {
+	embName := platformBinaryName()
+	if embName == "" {
+		return fmt.Errorf("unsupported platform: %s/%s", runtime.GOOS, runtime.GOARCH)
+	}
+
+	data, err := embeddedBinaries.ReadFile("embedded/" + embName)
+	if err != nil {
+		return fmt.Errorf("embedded binary not found for %s: %w", embName, err)
+	}
+
+	destPath := d.binaryPath()
+	os.MkdirAll(filepath.Dir(destPath), 0755)
+
+	if err := os.WriteFile(destPath, data, 0755); err != nil {
+		return fmt.Errorf("failed to extract embedded binary: %w", err)
+	}
+
+	d.mu.Lock()
+	d.binPath = destPath
+	d.version = "embedded"
+	d.mu.Unlock()
+	return nil
+}
+
 func (d *Daemon) EnsureBinary() error {
 	binPath := d.binaryPath()
 	if _, err := os.Stat(binPath); err == nil {
@@ -286,6 +317,12 @@ func (d *Daemon) EnsureBinary() error {
 		return nil
 	}
 
+	// Try extracting the embedded binary first
+	if err := d.extractEmbeddedBinary(); err == nil {
+		return nil
+	}
+
+	// Fallback: try downloading from GitHub
 	latestTag, err := d.FetchLatestVersion()
 	if err != nil {
 		return fmt.Errorf("no local binary and cannot fetch latest: %w", err)
