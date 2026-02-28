@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"strings"
 	"time"
 )
@@ -190,6 +191,19 @@ func (a *App) WrapMCPClient(client string) string {
 func (a *App) UnwrapMCPClient(client string) string {
 	body := fmt.Sprintf(`{"client":"%s","undo":true}`, client)
 	return a.postAPI("http://localhost:10180/api/mcp/wrap", body)
+}
+
+func (a *App) GetLogs(lines int) string {
+	data, err := os.ReadFile(a.daemon.logFilePath())
+	if err != nil {
+		return `{"lines":[]}`
+	}
+	all := strings.Split(strings.TrimRight(string(data), "\n"), "\n")
+	if lines > 0 && len(all) > lines {
+		all = all[len(all)-lines:]
+	}
+	out, _ := json.Marshal(map[string]interface{}{"lines": all})
+	return string(out)
 }
 
 func (a *App) fetchAPI(url string) string {
