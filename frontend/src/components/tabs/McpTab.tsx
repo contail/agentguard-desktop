@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 import type { MCPClient, MCPPolicyData, MCPAuditEntry } from "../../types";
 import { Card } from "../shared/Card";
+import { StatBox } from "../shared/StatBox";
 import { PageHeader } from "../shared/PageHeader";
 import { EmptyState } from "../shared/EmptyState";
 import { ListItemCard } from "../shared/ListItemCard";
@@ -106,6 +107,42 @@ function detectActiveTemplate(text: string): string | null {
   return null;
 }
 
+interface PolicySummary {
+  templateName: string;
+  templateColor: "success" | "accent" | "danger" | null;
+  templateDesc: string;
+  mode: string;
+  deniedTools: string[];
+  deniedPaths: string[];
+}
+
+function extractPolicySummary(
+  policy: MCPPolicyData | null,
+  policyText: string,
+): PolicySummary | null {
+  if (!policy?.policy?.default) return null;
+
+  const def = policy.policy.default;
+  const deniedTools: string[] = Array.isArray(def.denied_tools) ? def.denied_tools : [];
+  const deniedPaths: string[] = Array.isArray(def.denied_paths) ? def.denied_paths : [];
+  const mode: string = typeof def.mode === "string" ? def.mode : "unknown";
+
+  const activeId = detectActiveTemplate(policyText);
+  const matched = activeId ? POLICY_TEMPLATES.find((t) => t.id === activeId) : null;
+
+  return {
+    templateName: matched ? matched.name : "Custom",
+    templateColor: matched ? matched.color : null,
+    templateDesc: matched ? matched.description : "사용자 정의 규칙",
+    mode,
+    deniedTools,
+    deniedPaths,
+  };
+}
+
+const chipDanger = "inline-block px-2 py-[2px] rounded text-[11px] font-mono bg-danger-muted text-danger";
+const chipWarning = "inline-block px-2 py-[2px] rounded text-[11px] font-mono bg-warning-muted text-warning";
+
 const colorMap = {
   success: {
     border: "border-success",
@@ -141,6 +178,10 @@ export function McpTab({
 }: McpTabProps) {
   const [showAdvanced, setShowAdvanced] = useState(false);
   const activeTemplateId = useMemo(() => detectActiveTemplate(policyText), [policyText]);
+  const policySummary = useMemo(
+    () => extractPolicySummary(policy, policyText),
+    [policy, policyText],
+  );
 
   const applyTemplate = (t: PolicyTemplate) => {
     onPolicyTextChange(JSON.stringify(t.policy, null, 2));
@@ -234,6 +275,92 @@ export function McpTab({
           ))
         )}
       </Card>
+
+      {/* Active Policy Summary */}
+      {policySummary ? (
+        <>
+          <div className="text-[10px] font-medium text-content-muted uppercase tracking-wide mt-6 mb-2 px-1">
+            Active Policy
+          </div>
+          <div className="grid grid-cols-3 gap-4 mb-4">
+            <StatBox
+              label="Template"
+              value={policySummary.templateName}
+              variant="info"
+              colorClass={policySummary.templateColor ?? undefined}
+              description={policySummary.templateDesc}
+            />
+            <StatBox
+              label="Mode"
+              value={policySummary.mode}
+              variant="info"
+              colorClass={policySummary.mode === "enforce" ? "success" : "warning"}
+              description={policySummary.mode === "enforce" ? "규칙 위반 시 차단" : "위반을 기록만 함"}
+            />
+            <StatBox
+              label="Rules"
+              value={`${policySummary.deniedTools.length + policySummary.deniedPaths.length} rules`}
+              variant="info"
+              description={`${policySummary.deniedTools.length} tools, ${policySummary.deniedPaths.length} paths`}
+            />
+          </div>
+          {(policySummary.deniedTools.length > 0 || policySummary.deniedPaths.length > 0) && (
+            <Card title="Policy Details">
+              <div className="grid grid-cols-2 gap-6">
+                <div>
+                  <div className="text-[10px] font-medium text-content-muted uppercase tracking-wide mb-2">
+                    Denied Tools
+                  </div>
+                  {policySummary.deniedTools.length > 0 ? (
+                    <div className="flex flex-wrap gap-1.5">
+                      {policySummary.deniedTools.map((t) => (
+                        <span key={t} className={chipDanger}>{t}</span>
+                      ))}
+                    </div>
+                  ) : (
+                    <span className="text-xs text-content-muted">제한 없음</span>
+                  )}
+                </div>
+                <div>
+                  <div className="text-[10px] font-medium text-content-muted uppercase tracking-wide mb-2">
+                    Denied Paths
+                  </div>
+                  {policySummary.deniedPaths.length > 0 ? (
+                    <div className="flex flex-wrap gap-1.5">
+                      {policySummary.deniedPaths.map((p) => (
+                        <span key={p} className={chipWarning}>{p}</span>
+                      ))}
+                    </div>
+                  ) : (
+                    <span className="text-xs text-content-muted">제한 없음</span>
+                  )}
+                </div>
+              </div>
+            </Card>
+          )}
+        </>
+      ) : (
+        <Card title="Policy">
+          <EmptyState
+            title="보안 규칙이 설정되지 않았습니다"
+            description="아래 Advanced 섹션에서 설정할 수 있습니다."
+            icon={
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                width="32"
+                height="32"
+              >
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+              </svg>
+            }
+          />
+        </Card>
+      )}
 
       {/* MCP Audit Log */}
       <Card
