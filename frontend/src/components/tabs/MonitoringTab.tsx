@@ -235,16 +235,16 @@ export function MonitoringTab({
 
           <div className="grid grid-cols-[repeat(auto-fill,minmax(130px,1fr))] gap-2.5">
             <StatBox
-              label="Stage 1 Blocks"
+              label="Pattern Blocks"
               value={stats.stage1Blocked}
               icon={Icons.shield}
-              description="Local pattern matched"
+              description="로컬 패턴 매칭으로 차단"
             />
             <StatBox
-              label="Stage 2 Blocks"
+              label="AI Blocks"
               value={stats.stage2Blocked}
               icon={Icons.layers}
-              description="Remote AI evaluation"
+              description="원격 AI 평가로 차단"
             />
             <StatBox
               label="PII Sanitized"

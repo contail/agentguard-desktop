@@ -37,7 +37,7 @@ export function ApprovalsTab({
     <div className="animate-fade-in">
       <PageHeader
         title="Pending Actions"
-        description="AI 에이전트가 위험한 명령이나 파일 삭제를 시도할 때, 여기서 안전한지 확인하고 승인할 수 있습니다."
+        description="LLM Mode가 Confirm일 때, AI 에이전트의 도구 호출을 여기서 검토하고 승인할 수 있습니다."
       >
         <button className={btnDefault} onClick={onRefresh}>
           Refresh

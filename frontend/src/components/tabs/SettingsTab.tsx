@@ -47,7 +47,7 @@ export function SettingsTab({
     <div className="animate-fade-in">
       <PageHeader
         title="Configuration"
-        description="포트, 타임아웃, 보안 모드 등 프록시 데몬의 전반적인 환경을 설정합니다."
+        description="인바운드/아웃바운드 보호 정책과 연동 서비스를 설정합니다."
       />
 
       {!config && (
@@ -78,13 +78,13 @@ export function SettingsTab({
       {config && (
         <>
           <div className="text-[11px] font-semibold text-content-muted uppercase tracking-wide mb-3">
-            Proxy & Security
+            Inbound Protection
           </div>
           <Card title="AgentGuard Configuration">
             <div className="flex flex-col gap-4">
               <div className="flex flex-col gap-1.5">
                 <span className="flex flex-col text-[13px] font-medium text-content-primary tracking-tight">
-                  Proxy Port
+                  Listen Port
                   <span className="text-[11px] text-content-muted font-normal mt-0.5">
                     The port AgentGuard listens on for inbound traffic.
                   </span>
@@ -98,9 +98,9 @@ export function SettingsTab({
 
               <div className="flex flex-col gap-1.5">
                 <span className="flex flex-col text-[13px] font-medium text-content-primary tracking-tight">
-                  Gate Mode
+                  Protection Mode
                   <span className="text-[11px] text-content-muted font-normal mt-0.5">
-                    Trust evaluation enforcement policy.
+                    인바운드 요청에 대한 보호 정책을 설정합니다.
                   </span>
                 </span>
                 <select
@@ -122,9 +122,9 @@ export function SettingsTab({
 
               <div className="flex flex-col gap-1.5">
                 <span className="flex flex-col text-[13px] font-medium text-content-primary tracking-tight">
-                  Gate Enabled
+                  AI Evaluation
                   <span className="text-[11px] text-content-muted font-normal mt-0.5">
-                    Enable Stage 2 remote AI trust evaluation.
+                    원격 AI 서버를 이용한 2차 신뢰 평가를 활성화합니다.
                   </span>
                 </span>
                 <Toggle
@@ -132,15 +132,15 @@ export function SettingsTab({
                   onChange={(v) =>
                     onConfigChange({ ...config, gateEnabled: v })
                   }
-                  label="Toggle gate enabled"
+                  label="Toggle AI evaluation"
                 />
               </div>
 
               <div className="flex flex-col gap-1.5">
                 <span className="flex flex-col text-[13px] font-medium text-content-primary tracking-tight">
-                  Gate URL
+                  Evaluation Server
                   <span className="text-[11px] text-content-muted font-normal mt-0.5">
-                    Remote trust evaluation API endpoint.
+                    2차 신뢰 평가에 사용할 서버 주소입니다.
                   </span>
                 </span>
                 <input
@@ -155,9 +155,9 @@ export function SettingsTab({
 
               <div className="flex flex-col gap-1.5">
                 <span className="flex flex-col text-[13px] font-medium text-content-primary tracking-tight">
-                  Gate Timeout (ms)
+                  Evaluation Timeout (ms)
                   <span className="text-[11px] text-content-muted font-normal mt-0.5">
-                    Maximum wait time for Gate API response.
+                    2차 평가 응답 최대 대기 시간입니다.
                   </span>
                 </span>
                 <input
@@ -172,9 +172,9 @@ export function SettingsTab({
 
               <div className="flex flex-col gap-1.5">
                 <span className="flex flex-col text-[13px] font-medium text-content-primary tracking-tight">
-                  Gate Fail Open
+                  Fail Open
                   <span className="text-[11px] text-content-muted font-normal mt-0.5">
-                    Allow requests if the Gate API is unreachable.
+                    평가 서버에 연결할 수 없을 때 요청을 허용합니다.
                   </span>
                 </span>
                 <Toggle
@@ -182,22 +182,22 @@ export function SettingsTab({
                   onChange={(v) =>
                     onConfigChange({ ...config, gateFailOpen: v })
                   }
-                  label="Toggle gate fail open"
+                  label="Toggle fail open"
                 />
               </div>
             </div>
           </Card>
 
           <div className="text-[11px] font-semibold text-content-muted uppercase tracking-wide mb-3 mt-5">
-            LLM Gateway
+            Outbound Protection
           </div>
-          <Card title="LLM Traffic Monitoring">
+          <Card title="Outbound LLM Monitoring">
             <div className="flex flex-col gap-4">
               <div className="flex flex-col gap-1.5">
                 <span className="flex flex-col text-[13px] font-medium text-content-primary tracking-tight">
                   LLM Port
                   <span className="text-[11px] text-content-muted font-normal mt-0.5">
-                    Port for outbound LLM API interception.
+                    아웃바운드 LLM API 호출을 감시하는 포트입니다.
                   </span>
                 </span>
                 <div className="flex items-center justify-between py-2 px-2.5 bg-surface-input border border-line rounded-sm">
@@ -211,7 +211,7 @@ export function SettingsTab({
                 <span className="flex flex-col text-[13px] font-medium text-content-primary tracking-tight">
                   LLM Mode
                   <span className="text-[11px] text-content-muted font-normal mt-0.5">
-                    How to handle outgoing LLM tool calls.
+                    AI 에이전트의 도구 호출을 처리하는 방식입니다.
                   </span>
                 </span>
                 <select
