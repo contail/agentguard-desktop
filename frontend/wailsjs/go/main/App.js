@@ -18,6 +18,10 @@ export function GetDaemonStatus() {
   return window['go']['main']['App']['GetDaemonStatus']();
 }
 
+export function GetLogs(arg1) {
+  return window['go']['main']['App']['GetLogs'](arg1);
+}
+
 export function GetMCPAudit() {
   return window['go']['main']['App']['GetMCPAudit']();
 }

@@ -26,10 +26,7 @@ func NewApp() *App {
 
 func (a *App) startup(ctx context.Context) {
 	a.ctx = ctx
-	go func() {
-		a.daemon.EnsureBinary()
-		a.daemon.Probe()
-	}()
+	go a.daemon.Start()
 }
 
 func (a *App) shutdown(ctx context.Context) {

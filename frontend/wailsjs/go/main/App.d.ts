@@ -9,6 +9,8 @@ export function GetApprovals():Promise<string>;
 
 export function GetDaemonStatus():Promise<string>;
 
+export function GetLogs(arg1:number):Promise<string>;
+
 export function GetMCPAudit():Promise<string>;
 
 export function GetMCPClients():Promise<string>;
