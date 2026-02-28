@@ -235,78 +235,6 @@ export function McpTab({
         )}
       </Card>
 
-      <div className="flex justify-center my-6">
-        <button
-          className="inline-flex items-center gap-1.5 py-[7px] px-3.5 rounded-sm text-[11px] font-medium cursor-pointer transition-all bg-transparent border border-dashed border-line text-content-muted hover:border-line-hover hover:text-content-secondary"
-          onClick={() => setShowAdvanced(!showAdvanced)}
-        >
-          {showAdvanced ? "Hide Advanced Settings" : "Show Advanced Settings"}
-        </button>
-      </div>
-
-      {showAdvanced && (
-        <Card
-          title="Policy Editor"
-          headerRight={
-            policy && (
-              <span className="text-[11px] text-content-muted">
-                {policy.exists
-                  ? policy.path
-                  : "No policy file — will be created on save"}
-              </span>
-            )
-          }
-        >
-          <div className="py-3 px-4 bg-accent/10 border border-accent/20 rounded-sm mb-4 text-xs text-content-primary leading-relaxed">
-            <strong>보안 규칙 설정:</strong> AI가 실행할 수 없는 위험한
-            명령어(예: bash)나 접근할 수 없는 폴더(예: /etc)를 설정합니다. 잘
-            모를 경우 기본값을 그대로 유지하는 것이 안전합니다.
-          </div>
-
-          {/* Template Selection */}
-          <div className="template-grid">
-            {POLICY_TEMPLATES.map((t) => {
-              const selected = activeTemplateId === t.id;
-              const c = colorMap[t.color];
-              return (
-                <button
-                  key={t.id}
-                  type="button"
-                  className={`template-card ${selected ? `template-card--selected ${c.border}` : ""}`}
-                  onClick={() => applyTemplate(t)}
-                >
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className={`inline-block w-2 h-2 rounded-full ${c.dot}`} />
-                    <span className={`text-xs font-semibold ${selected ? c.text : "text-content-primary"}`}>
-                      {t.name}
-                    </span>
-                  </div>
-                  <p className="text-[11px] text-content-muted leading-snug">
-                    {t.description}
-                  </p>
-                </button>
-              );
-            })}
-          </div>
-
-          <textarea
-            className="w-full min-h-[220px] font-mono text-xs leading-relaxed resize-y mb-3 py-2 px-2.5 bg-[#121212] border border-line rounded-sm text-content-primary outline-none transition-colors focus:border-accent focus-visible:ring-2 focus-visible:ring-accent"
-            value={policyText}
-            onChange={(e) => onPolicyTextChange(e.target.value)}
-            placeholder={`{\n  "version": "1",\n  "default": {\n    "denied_tools": ["bash", "write_*"],\n    "denied_paths": ["/etc/*", "~/.ssh/*"],\n    "mode": "enforce"\n  }\n}`}
-            spellCheck={false}
-            aria-label="MCP policy JSON editor"
-          />
-          <button
-            className={`${btnPrimary} ${savingPolicy ? "btn-loading" : ""}`}
-            onClick={onSavePolicy}
-            disabled={savingPolicy}
-          >
-            Save Policy
-          </button>
-        </Card>
-      )}
-
       {/* MCP Audit Log */}
       <Card
         title="Audit Log"
@@ -380,6 +308,92 @@ export function McpTab({
           </div>
         )}
       </Card>
+
+      {/* Advanced: Policy Editor — collapsed by default at the bottom */}
+      <div className="mt-2">
+        <button
+          className="flex items-center gap-2 w-full py-3 px-4 rounded border border-line bg-surface-card text-content-muted text-xs font-medium cursor-pointer transition-all hover:border-line-hover hover:text-content-secondary"
+          onClick={() => setShowAdvanced(!showAdvanced)}
+        >
+          <svg
+            className={`w-3.5 h-3.5 transition-transform ${showAdvanced ? "rotate-90" : ""}`}
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <polyline points="9 18 15 12 9 6" />
+          </svg>
+          Advanced: Policy Editor
+        </button>
+
+        {showAdvanced && (
+          <div className="mt-2">
+            <Card
+              title="Policy Editor"
+              headerRight={
+                policy && (
+                  <span className="text-[11px] text-content-muted">
+                    {policy.exists
+                      ? policy.path
+                      : "No policy file — will be created on save"}
+                  </span>
+                )
+              }
+            >
+              <div className="py-3 px-4 bg-accent/10 border border-accent/20 rounded-sm mb-4 text-xs text-content-primary leading-relaxed">
+                <strong>보안 규칙 설정:</strong> AI가 실행할 수 없는 위험한
+                명령어(예: bash)나 접근할 수 없는 폴더(예: /etc)를 설정합니다. 잘
+                모를 경우 기본값을 그대로 유지하는 것이 안전합니다.
+              </div>
+
+              {/* Template Selection */}
+              <div className="template-grid">
+                {POLICY_TEMPLATES.map((t) => {
+                  const selected = activeTemplateId === t.id;
+                  const c = colorMap[t.color];
+                  return (
+                    <button
+                      key={t.id}
+                      type="button"
+                      className={`template-card ${selected ? `template-card--selected ${c.border}` : ""}`}
+                      onClick={() => applyTemplate(t)}
+                    >
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className={`inline-block w-2 h-2 rounded-full ${c.dot}`} />
+                        <span className={`text-xs font-semibold ${selected ? c.text : "text-content-primary"}`}>
+                          {t.name}
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-content-muted leading-snug">
+                        {t.description}
+                      </p>
+                    </button>
+                  );
+                })}
+              </div>
+
+              <textarea
+                className="w-full min-h-[220px] font-mono text-xs leading-relaxed resize-y mb-3 py-2 px-2.5 bg-[#121212] border border-line rounded-sm text-content-primary outline-none transition-colors focus:border-accent focus-visible:ring-2 focus-visible:ring-accent"
+                value={policyText}
+                onChange={(e) => onPolicyTextChange(e.target.value)}
+                placeholder={`{\n  "version": "1",\n  "default": {\n    "denied_tools": ["bash", "write_*"],\n    "denied_paths": ["/etc/*", "~/.ssh/*"],\n    "mode": "enforce"\n  }\n}`}
+                spellCheck={false}
+                aria-label="MCP policy JSON editor"
+              />
+              <button
+                className={`${btnPrimary} ${savingPolicy ? "btn-loading" : ""}`}
+                onClick={onSavePolicy}
+                disabled={savingPolicy}
+              >
+                Save Policy
+              </button>
+            </Card>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
