@@ -40,11 +40,33 @@ export function SettingsTab({
 }: SettingsTabProps) {
   return (
     <div className="tab-content">
-      <PageHeader title="Settings" />
+      <PageHeader
+        title="Configuration"
+        description="포트, 타임아웃, 보안 모드 등 프록시 데몬의 전반적인 환경을 설정합니다."
+      />
 
       {!config && (
         <Card title="Configuration">
-          <EmptyState message="Start the daemon to load configuration" />
+          <EmptyState
+            title="AgentGuard가 꺼져있습니다."
+            description="설정을 로드하려면 좌측 하단의 [Start] 버튼을 눌러 데몬을 켜주세요."
+            icon={
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                width="32"
+                height="32"
+              >
+                <rect x="2" y="3" width="20" height="14" rx="2" ry="2" />
+                <line x1="8" y1="21" x2="16" y2="21" />
+                <line x1="12" y1="17" x2="12" y2="21" />
+              </svg>
+            }
+          />
         </Card>
       )}
 

@@ -336,7 +336,7 @@ function App() {
   const navItems: { id: Tab; label: string; icon: JSX.Element }[] = [
     {
       id: "monitoring",
-      label: "Monitoring",
+      label: "Dashboard",
       icon: (
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
           <path d="M3 12h4l3-9 4 18 3-9h4" />
@@ -345,7 +345,7 @@ function App() {
     },
     {
       id: "settings",
-      label: "Settings",
+      label: "Configuration",
       icon: (
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
           <circle cx="12" cy="12" r="3" />
@@ -355,7 +355,7 @@ function App() {
     },
     {
       id: "approvals",
-      label: "Approvals",
+      label: "Pending Actions",
       icon: (
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
           <path d="M9 11l3 3L22 4M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" />
@@ -364,7 +364,7 @@ function App() {
     },
     {
       id: "mcp",
-      label: "MCP",
+      label: "IDE Protection",
       icon: (
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
           <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
@@ -424,6 +424,7 @@ function App() {
               blockRateNum={blockRateNum}
               loading={statsLoading}
               error={statsError}
+              daemonState={daemon.state}
               onRefresh={refreshAll}
             />
           )}
