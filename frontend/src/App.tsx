@@ -86,9 +86,6 @@ function App() {
   const [mcpPolicyText, setMcpPolicyText] = useState("");
   const [mcpAudit, setMcpAudit] = useState<MCPAuditEntry[]>([]);
   const [mcpClients, setMcpClients] = useState<MCPClient[]>([]);
-  const [updateInfo, setUpdateInfo] = useState<any>(null);
-  const [updateChecking, setUpdateChecking] = useState(false);
-  const [updating, setUpdating] = useState(false);
   const [savingConfig, setSavingConfig] = useState(false);
   const [savingOcConfig, setSavingOcConfig] = useState(false);
   const [savingPolicy, setSavingPolicy] = useState(false);
@@ -295,23 +292,6 @@ function App() {
     if (r.error) showToast(r.error, "error");
     else showToast(`Approval ${action}d`, "success");
     loadApprovals();
-  };
-
-  const handleCheckUpdate = async () => {
-    setUpdateChecking(true);
-    const r = await safeCall(() => window.go.main.App.CheckForUpdate());
-    setUpdateInfo(r);
-    setUpdateChecking(false);
-  };
-
-  const handleUpdateCore = async () => {
-    setUpdating(true);
-    const r = await safeCall(() => window.go.main.App.UpdateDaemon());
-    if (r.error) showToast(r.error, "error");
-    else showToast(`Updated to ${r.version}`, "success");
-    setUpdating(false);
-    handleCheckUpdate();
-    loadDaemonStatus();
   };
 
   const handleSaveMCPPolicy = async () => {
@@ -521,11 +501,6 @@ function App() {
               onOcBaseUrlChange={setOcBaseUrl}
               onSaveOcConfig={handleSaveOcConfig}
               savingOcConfig={savingOcConfig}
-              updateInfo={updateInfo}
-              updateChecking={updateChecking}
-              updating={updating}
-              onCheckUpdate={handleCheckUpdate}
-              onUpdateCore={handleUpdateCore}
             />
           )}
 

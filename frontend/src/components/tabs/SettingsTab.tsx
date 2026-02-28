@@ -1,12 +1,9 @@
 import { useState } from "react";
-import { BrowserOpenURL } from "../../../wailsjs/runtime/runtime";
 import type { AgConfig } from "../../types";
 import { Card } from "../shared/Card";
 import { Toggle } from "../shared/Toggle";
 import { PageHeader } from "../shared/PageHeader";
 import { EmptyState } from "../shared/EmptyState";
-import { ListItemCard } from "../shared/ListItemCard";
-import { Badge } from "../shared/Badge";
 
 interface SettingsTabProps {
   config: AgConfig | null;
@@ -17,11 +14,6 @@ interface SettingsTabProps {
   onOcBaseUrlChange: (url: string) => void;
   onSaveOcConfig: () => void;
   savingOcConfig: boolean;
-  updateInfo: any;
-  updateChecking: boolean;
-  updating: boolean;
-  onCheckUpdate: () => void;
-  onUpdateCore: () => void;
 }
 
 const btnBase =
@@ -38,11 +30,6 @@ export function SettingsTab({
   onOcBaseUrlChange,
   onSaveOcConfig,
   savingOcConfig,
-  updateInfo,
-  updateChecking,
-  updating,
-  onCheckUpdate,
-  onUpdateCore,
 }: SettingsTabProps) {
   const [showAdvanced, setShowAdvanced] = useState(false);
 
@@ -339,96 +326,6 @@ export function SettingsTab({
         </>
       )}
 
-      {/* Updates */}
-      <Card
-        title="Updates"
-        headerRight={
-          <button
-            className={btnDefault}
-            onClick={onCheckUpdate}
-            disabled={updateChecking}
-          >
-            {updateChecking ? "Checking..." : "Check for Updates"}
-          </button>
-        }
-      >
-        {!updateInfo ? (
-          <EmptyState message='Click "Check for Updates" to scan for new versions' />
-        ) : updateInfo.error ? (
-          <EmptyState message={updateInfo.error} variant="error" />
-        ) : (
-          <div className="flex flex-col gap-3">
-            <ListItemCard
-              badge={
-                <Badge
-                  variant={
-                    updateInfo.coreUpdateAvailable ? "pending" : "approved"
-                  }
-                >
-                  {updateInfo.coreUpdateAvailable
-                    ? "update available"
-                    : "up to date"}
-                </Badge>
-              }
-              title="AgentGuard Core"
-              meta={
-                <>
-                  Installed: v{updateInfo.coreLocal || "?"} &middot; Latest:{" "}
-                  {updateInfo.coreRemote || "?"}
-                  {updateInfo.coreError &&
-                    ` (error: ${updateInfo.coreError})`}
-                </>
-              }
-              actions={
-                updateInfo.coreUpdateAvailable ? (
-                  <button
-                    className={`${btnPrimary} ${updating ? "btn-loading" : ""}`}
-                    onClick={onUpdateCore}
-                    disabled={updating}
-                  >
-                    {updating ? "Updating..." : "Update Now"}
-                  </button>
-                ) : undefined
-              }
-            />
-            <ListItemCard
-              badge={
-                <Badge
-                  variant={
-                    updateInfo.desktopUpdateAvailable ? "pending" : "approved"
-                  }
-                >
-                  {updateInfo.desktopUpdateAvailable
-                    ? "update available"
-                    : "up to date"}
-                </Badge>
-              }
-              title="AgentGuard Desktop"
-              meta={
-                <>
-                  Installed: v{updateInfo.appVersion || "?"} &middot; Latest:{" "}
-                  {updateInfo.desktopRemote || "?"}
-                  {updateInfo.desktopError &&
-                    ` (error: ${updateInfo.desktopError})`}
-                </>
-              }
-              actions={
-                updateInfo.desktopUpdateAvailable &&
-                updateInfo.desktopDownloadURL ? (
-                  <button
-                    className={btnPrimary}
-                    onClick={() =>
-                      BrowserOpenURL(updateInfo.desktopDownloadURL)
-                    }
-                  >
-                    Download
-                  </button>
-                ) : undefined
-              }
-            />
-          </div>
-        )}
-      </Card>
     </div>
   );
 }
