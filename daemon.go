@@ -165,12 +165,16 @@ func (d *Daemon) stopDirect() error {
 	if err != nil {
 		return nil
 	}
-	proc.Signal(syscall.SIGTERM)
 
-	for i := 0; i < 10; i++ {
-		time.Sleep(500 * time.Millisecond)
-		if err := syscall.Kill(pid, 0); err != nil {
-			break
+	if runtime.GOOS == "windows" {
+		proc.Kill()
+	} else {
+		proc.Signal(syscall.SIGTERM)
+		for i := 0; i < 10; i++ {
+			time.Sleep(500 * time.Millisecond)
+			if err := proc.Signal(syscall.Signal(0)); err != nil {
+				break
+			}
 		}
 	}
 
