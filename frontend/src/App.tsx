@@ -90,14 +90,18 @@ function App() {
   const [savingConfig, setSavingConfig] = useState(false);
   const [savingOcConfig, setSavingOcConfig] = useState(false);
   const [savingPolicy, setSavingPolicy] = useState(false);
-  const [confirmState, setConfirmState] = useState<ConfirmDialogState>(initialConfirmState);
+  const [confirmState, setConfirmState] =
+    useState<ConfirmDialogState>(initialConfirmState);
 
   const timeSince = useTimeSince(lastUpdate);
 
-  const showToast = useCallback((message: string, type: "success" | "error") => {
-    setToast({ message, type });
-    setTimeout(() => setToast(null), 3000);
-  }, []);
+  const showToast = useCallback(
+    (message: string, type: "success" | "error") => {
+      setToast({ message, type });
+      setTimeout(() => setToast(null), 3000);
+    },
+    [],
+  );
 
   const safeCall = useCallback(async (fn: () => Promise<string>) => {
     try {
@@ -220,7 +224,15 @@ function App() {
     } else if (tab === "approvals") {
       loadApprovals();
     }
-  }, [tab, loadConfig, loadOcConfig, loadMCPPolicy, loadMCPAudit, loadMCPClients, loadApprovals]);
+  }, [
+    tab,
+    loadConfig,
+    loadOcConfig,
+    loadMCPPolicy,
+    loadMCPAudit,
+    loadMCPClients,
+    loadApprovals,
+  ]);
 
   // --- Event handlers ---
 
@@ -248,7 +260,9 @@ function App() {
       llmMode: config.llmMode,
       piiEnabled: config.piiEnabled,
     };
-    const r = await safeCall(() => window.go.main.App.SaveAgentGuardConfig(JSON.stringify(body)));
+    const r = await safeCall(() =>
+      window.go.main.App.SaveAgentGuardConfig(JSON.stringify(body)),
+    );
     if (r.error) showToast(r.error, "error");
     else showToast("Settings saved", "success");
     setSavingConfig(false);
@@ -256,20 +270,26 @@ function App() {
 
   const handleSaveOcConfig = async () => {
     setSavingOcConfig(true);
-    const cfg = ocFullConfig || { models: { providers: { anthropic: {} } } };
+    const cfg = ocFullConfig || {
+      models: { providers: { anthropic: {} } },
+    };
     try {
       cfg.models.providers.anthropic.baseUrl = ocBaseUrl;
     } catch {
       /* structure mismatch */
     }
-    const r = await safeCall(() => window.go.main.App.SaveOpenClawConfig(JSON.stringify(cfg)));
+    const r = await safeCall(() =>
+      window.go.main.App.SaveOpenClawConfig(JSON.stringify(cfg)),
+    );
     if (r.error) showToast(r.error, "error");
     else showToast("OpenClaw settings saved", "success");
     setSavingOcConfig(false);
   };
 
   const handleApproval = async (id: string, action: string) => {
-    const r = await safeCall(() => window.go.main.App.HandleApproval(id, action));
+    const r = await safeCall(() =>
+      window.go.main.App.HandleApproval(id, action),
+    );
     if (r.error) showToast(r.error, "error");
     else showToast(`Approval ${action}d`, "success");
     loadApprovals();
@@ -300,7 +320,9 @@ function App() {
       return;
     }
     setSavingPolicy(true);
-    const r = await safeCall(() => window.go.main.App.SaveMCPPolicy(mcpPolicyText));
+    const r = await safeCall(() =>
+      window.go.main.App.SaveMCPPolicy(mcpPolicyText),
+    );
     if (r.error) showToast(r.error, "error");
     else showToast("Policy saved", "success");
     setSavingPolicy(false);
@@ -322,7 +344,9 @@ function App() {
       confirmLabel: "Unwrap",
       variant: "danger",
       onConfirm: async () => {
-        const r = await safeCall(() => window.go.main.App.UnwrapMCPClient(client));
+        const r = await safeCall(() =>
+          window.go.main.App.UnwrapMCPClient(client),
+        );
         if (r.error) showToast(r.error, "error");
         else showToast(`${client} unwrapped`, "success");
         loadMCPClients();
@@ -330,7 +354,9 @@ function App() {
     });
   };
 
-  const blockRateNum = stats ? parseFloat(String(stats.blockRate).replace("%", "")) : 0;
+  const blockRateNum = stats
+    ? parseFloat(String(stats.blockRate).replace("%", ""))
+    : 0;
 
   // --- Sidebar nav items ---
   const navItems: { id: Tab; label: string; icon: JSX.Element }[] = [
@@ -373,50 +399,92 @@ function App() {
     },
   ];
 
+  const daemonDotClass =
+    daemon.state === "running"
+      ? "bg-success shadow-[0_0_6px_theme(colors.success.DEFAULT)]"
+      : daemon.state === "starting"
+        ? "bg-warning animate-pulse"
+        : daemon.state === "error"
+          ? "bg-danger shadow-[0_0_6px_theme(colors.danger.DEFAULT)]"
+          : "bg-content-muted";
+
   return (
     <>
-      <div className="titlebar">
-        <h1>AgentGuard</h1>
-        <div className={`status-indicator ${daemon.state === "running" ? "online" : ""}`} />
-        {daemon.version && <span className="version-badge">v{daemon.version}</span>}
+      {/* Titlebar */}
+      <div className="h-[38px] flex items-center px-4 bg-surface-primary border-b border-line select-none gap-2.5">
+        <h1 className="text-[13px] font-semibold text-content-secondary tracking-tight">
+          AgentGuard
+        </h1>
+        <div
+          className={`w-[7px] h-[7px] rounded-full shrink-0 ${
+            daemon.state === "running"
+              ? "bg-success shadow-[0_0_6px_theme(colors.success.DEFAULT)]"
+              : "bg-content-muted"
+          }`}
+        />
+        {daemon.version && (
+          <span className="text-[10px] text-content-muted bg-white/[0.06] px-[7px] py-[2px] rounded">
+            v{daemon.version}
+          </span>
+        )}
       </div>
 
-      <div className="app-layout">
-        <nav className="sidebar">
-          <div className="sidebar-section">
-            <div className="sidebar-label">Dashboard</div>
+      {/* Layout */}
+      <div className="flex h-[calc(100%-38px)]">
+        {/* Sidebar */}
+        <nav className="w-[200px] max-[900px]:w-[52px] border-r border-line flex flex-col py-3 shrink-0">
+          <div className="px-3 mb-5">
+            <div className="text-[10px] font-semibold text-content-muted uppercase tracking-widest px-2 mb-1.5 max-[900px]:hidden">
+              Dashboard
+            </div>
             {navItems.map((item) => (
               <button
                 key={item.id}
-                className={`sidebar-item ${tab === item.id ? "active" : ""}`}
+                className={`flex items-center gap-2 py-2 px-2.5 rounded-sm cursor-pointer text-[13px] transition-all border-none w-full text-left max-[900px]:justify-center max-[900px]:p-2.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent ${
+                  tab === item.id
+                    ? "bg-white/[0.06] text-content-primary"
+                    : "bg-transparent text-content-secondary hover:bg-surface-card hover:text-content-primary"
+                }`}
                 onClick={() => setTab(item.id)}
               >
-                {item.icon}
-                <span>{item.label}</span>
+                <svg className="w-4 h-4 shrink-0" viewBox={item.icon.props.viewBox} fill={item.icon.props.fill} stroke={item.icon.props.stroke} strokeWidth={item.icon.props.strokeWidth}>
+                  {item.icon.props.children}
+                </svg>
+                <span className="max-[900px]:hidden">{item.label}</span>
               </button>
             ))}
           </div>
 
-          <div className="sidebar-spacer" />
+          <div className="flex-1" />
 
-          <div className="sidebar-footer">
-            <div className="daemon-control">
-              <div className={`daemon-dot ${daemon.state}`} />
-              <span className="daemon-state-text">{daemon.state}</span>
+          {/* Sidebar footer */}
+          <div className="p-3 border-t border-line">
+            <div className="flex items-center gap-3 py-3">
+              <div className={`w-2 h-2 rounded-full ${daemonDotClass}`} />
+              <span className="text-[11px] text-content-muted">
+                {daemon.state}
+              </span>
             </div>
             {daemon.state === "running" || daemon.state === "starting" ? (
-              <button className="btn btn-danger sidebar-action-btn" onClick={handleStopDaemon}>
+              <button
+                className="inline-flex items-center gap-1.5 py-[7px] px-3.5 rounded-sm text-xs font-medium cursor-pointer transition-all border border-transparent bg-danger-muted text-danger hover:bg-danger hover:text-white no-drag focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent w-full justify-center"
+                onClick={handleStopDaemon}
+              >
                 Stop
               </button>
             ) : (
-              <button className="btn btn-success sidebar-action-btn" onClick={handleStartDaemon}>
+              <button
+                className="inline-flex items-center gap-1.5 py-[7px] px-3.5 rounded-sm text-xs font-medium cursor-pointer transition-all border border-transparent bg-success-muted text-success hover:bg-success hover:text-white no-drag focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent w-full justify-center"
+                onClick={handleStartDaemon}
+              >
                 Start
               </button>
             )}
           </div>
         </nav>
 
-        <main className="main-content">
+        {/* Main content */}
+        <main className="flex-1 overflow-y-auto p-6 scrollbar-thin">
           {tab === "monitoring" && (
             <MonitoringTab
               stats={stats}
@@ -479,7 +547,10 @@ function App() {
       </div>
 
       {toast && <Toast toast={toast} />}
-      <ConfirmDialog state={confirmState} onClose={() => setConfirmState(initialConfirmState)} />
+      <ConfirmDialog
+        state={confirmState}
+        onClose={() => setConfirmState(initialConfirmState)}
+      />
     </>
   );
 }

@@ -6,12 +6,16 @@ interface PageHeaderProps {
 
 export function PageHeader({ title, description, children }: PageHeaderProps) {
   return (
-    <div className="page-header">
+    <div className="flex items-center justify-between mb-6">
       <div>
-        <h2>{title}</h2>
-        {description && <p className="page-header__desc">{description}</p>}
+        <h2 className="text-xl font-bold tracking-tight">{title}</h2>
+        {description && (
+          <p className="text-[13px] text-content-secondary mt-1">
+            {description}
+          </p>
+        )}
       </div>
-      {children && <div className="page-header__controls">{children}</div>}
+      {children && <div className="flex items-center gap-2.5">{children}</div>}
     </div>
   );
 }

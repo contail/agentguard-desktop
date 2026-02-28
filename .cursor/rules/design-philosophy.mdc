@@ -1,0 +1,37 @@
+---
+description: AgentGuard Desktop design philosophy and visual identity
+alwaysApply: true
+---
+
+# Design Philosophy: Invisible Shield
+
+AgentGuard Desktop follows the "Invisible Shield" philosophy.
+The app protects AI agents silently in the background without overwhelming users.
+
+## Core Principles
+
+- **Quiet & Calm**: Minimal visual noise. No aggressive reds, flashing alerts, or hacker aesthetics.
+- **Trust through Clarity**: Clean whitespace, precise typography, and understated color convey reliability.
+- **Action-Oriented**: Each screen has at most 1-2 primary actions. Hide complexity behind "Advanced" toggles.
+- **Low Density**: Prefer generous spacing over cramming information. Hero metrics first, details second.
+
+## Color Palette (Monochrome + Soft Accent)
+
+- Background: deep grey (`#18181a`), not pure black
+- Card surface: subtle lift (`#222224`) with thin border (`#333336`)
+- Text: soft white (`#ededed`) for primary, muted grey (`#a1a1aa` / `#71717a`) for secondary
+- Accent: soft blue (`#60a5fa`) for interactive elements
+- Success: emerald (`#10b981`), Danger: red (`#ef4444`), Warning: amber (`#f59e0b`)
+
+## Typography
+
+- Font: Inter (400 Regular, 500 Medium, 600 SemiBold, 700 Bold)
+- Labels: 500 weight, muted color, with inline description in lighter weight below
+- Values/Numbers: 600-700 weight, tabular-nums for alignment
+
+## Empty States
+
+Never show a blank screen with just text. Always provide:
+1. A subtle SVG icon
+2. A clear title explaining the state
+3. A description telling the user what to do next

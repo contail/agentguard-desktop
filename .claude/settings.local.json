@@ -9,7 +9,10 @@
       "Bash(wails dev 2>&1)",
       "Bash(~/go/bin/wails dev 2>&1)",
       "Bash(cd /Users/sangjin/agentguard-desktop/frontend && npx tsc --noEmit 2>&1 | head -30)",
-      "Bash(npm run build 2>&1 | tail -10)"
+      "Bash(npm run build 2>&1 | tail -10)",
+      "Bash(npm install -D tailwindcss@3 postcss autoprefixer 2>&1 | tail -5)",
+      "Bash(npx tsc --noEmit 2>&1 | head -30)",
+      "Bash(npm run build 2>&1)"
     ]
   }
 }

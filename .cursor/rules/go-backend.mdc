@@ -1,0 +1,36 @@
+---
+description: Go backend conventions for AgentGuard Desktop (Wails)
+globs: "**/*.go"
+alwaysApply: false
+---
+
+# Go Backend Conventions
+
+## Architecture
+
+- `main.go`: Wails app entry point, window config, lifecycle hooks
+- `app.go`: All Wails-bound methods (called from React via `window.go.main.App.*`)
+- `daemon.go`: AgentGuard core binary management (download, start, stop, probe, PID tracking)
+
+## Wails Bindings
+
+- All bound methods return `string` (JSON-encoded)
+- Success: `{"status":"ok"}` or the raw API response JSON
+- Error: `{"error":"<message>"}`
+- Use `safeCall` wrapper on the frontend to parse these uniformly
+
+## Daemon Management
+
+- Daemon runs as a detached process (survives app exit)
+- `Probe()` checks `localhost:10180/agentguard/stats` to detect already-running daemons
+- PID file at `~/.agentguard/desktop/agentguard.pid` for process tracking
+- App shutdown does NOT kill the daemon (independent lifecycle)
+- Binary stored at `~/.agentguard/desktop/agentguard`
+- Version tracked in `~/.agentguard/desktop/version.txt`
+
+## API Proxy Pattern
+
+All data flows through the AgentGuard core API on `localhost:10180`:
+- `fetchAPI(url)`: GET request, returns response body as string
+- `postAPI(url, bodyJSON)`: POST request with JSON body
+- Desktop app never reads config files directly; always goes through core API

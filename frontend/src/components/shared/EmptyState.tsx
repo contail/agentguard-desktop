@@ -17,15 +17,26 @@ export function EmptyState({
 }: EmptyStateProps) {
   if (variant === "hero") {
     return (
-      <div className="empty-state--hero">
-        {icon && <div className="empty-state__icon">{icon}</div>}
-        {title && <h3 className="empty-state__title">{title}</h3>}
-        {description && <p className="empty-state__desc">{description}</p>}
+      <div className="flex flex-col items-center justify-center py-20 px-10 text-center">
+        {icon && (
+          <div className="w-12 h-12 text-content-muted mb-5 opacity-50">
+            {icon}
+          </div>
+        )}
+        {title && (
+          <h3 className="text-base font-semibold text-content-secondary mb-2">
+            {title}
+          </h3>
+        )}
+        {description && (
+          <p className="text-[13px] text-content-muted max-w-xs leading-relaxed">
+            {description}
+          </p>
+        )}
         {action && (
           <button
-            className={`btn ${action.className || "btn-primary"}`}
+            className={`inline-flex items-center gap-1.5 py-[7px] px-3.5 rounded-sm text-xs font-medium cursor-pointer transition-all border border-accent bg-accent text-white hover:bg-accent-hover hover:border-accent-hover mt-6 ${action.className ?? ""}`}
             onClick={action.onClick}
-            style={{ marginTop: 24 }}
           >
             {action.label}
           </button>
@@ -35,18 +46,25 @@ export function EmptyState({
   }
 
   return (
-    <div className={`empty-state ${variant === "error" ? "empty-state--error" : ""}`}>
+    <div
+      className={`flex flex-col items-center justify-center text-center py-10 px-5 text-[13px] ${
+        variant === "error" ? "text-danger" : "text-content-muted"
+      }`}
+    >
       {icon && (
-        <div className="empty-state__icon-small" style={{ marginBottom: 12 }}>
+        <div className="w-8 h-8 text-content-muted opacity-70 mb-3">
           {icon}
         </div>
       )}
       <p>{message || title}</p>
       {description && (
-        <p style={{ fontSize: 12, marginTop: 6, color: "var(--text-muted)" }}>{description}</p>
+        <p className="text-xs mt-1.5 text-content-muted">{description}</p>
       )}
       {action && (
-        <button className="btn btn-primary" onClick={action.onClick} style={{ marginTop: 12 }}>
+        <button
+          className="inline-flex items-center gap-1.5 py-[7px] px-3.5 rounded-sm text-xs font-medium cursor-pointer transition-all border border-accent bg-accent text-white hover:bg-accent-hover hover:border-accent-hover mt-3"
+          onClick={action.onClick}
+        >
           {action.label}
         </button>
       )}

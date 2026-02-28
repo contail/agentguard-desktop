@@ -1,10 +1,78 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import type { MCPClient, MCPPolicyData, MCPAuditEntry } from "../../types";
 import { Card } from "../shared/Card";
 import { PageHeader } from "../shared/PageHeader";
 import { EmptyState } from "../shared/EmptyState";
 import { ListItemCard } from "../shared/ListItemCard";
 import { Badge } from "../shared/Badge";
+
+/* ── Policy Templates ── */
+interface PolicyTemplate {
+  id: string;
+  name: string;
+  description: string;
+  color: "success" | "accent" | "danger";
+  policy: {
+    version: string;
+    default: {
+      denied_tools: string[];
+      denied_paths: string[];
+      mode: string;
+    };
+  };
+}
+
+const POLICY_TEMPLATES: PolicyTemplate[] = [
+  {
+    id: "minimal",
+    name: "Minimal",
+    description: "최소한의 보안, 자유로운 작업",
+    color: "success",
+    policy: {
+      version: "1",
+      default: {
+        denied_tools: ["bash"],
+        denied_paths: ["~/.ssh/*"],
+        mode: "monitor",
+      },
+    },
+  },
+  {
+    id: "standard",
+    name: "Standard",
+    description: "일반적인 보안 수준",
+    color: "accent",
+    policy: {
+      version: "1",
+      default: {
+        denied_tools: ["bash", "write_*", "execute_*"],
+        denied_paths: ["/etc/*", "~/.ssh/*", "~/.aws/*", "~/.gnupg/*"],
+        mode: "enforce",
+      },
+    },
+  },
+  {
+    id: "strict",
+    name: "Strict",
+    description: "최대 보안, 엄격한 제한",
+    color: "danger",
+    policy: {
+      version: "1",
+      default: {
+        denied_tools: ["bash", "write_*", "execute_*", "read_*", "delete_*"],
+        denied_paths: [
+          "/etc/*",
+          "~/.ssh/*",
+          "~/.aws/*",
+          "~/.gnupg/*",
+          "~/.config/*",
+          "/usr/*",
+        ],
+        mode: "enforce",
+      },
+    },
+  },
+];
 
 interface McpTabProps {
   clients: MCPClient[];
@@ -19,6 +87,46 @@ interface McpTabProps {
   onRefresh: () => void;
 }
 
+const btnBase =
+  "inline-flex items-center gap-1.5 py-[7px] px-3.5 rounded-sm text-xs font-medium cursor-pointer transition-all no-drag focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent";
+const btnDefault = `${btnBase} border border-line bg-surface-card text-content-secondary hover:bg-surface-primary hover:border-line-hover hover:text-content-primary`;
+const btnPrimary = `${btnBase} border border-accent bg-accent text-white hover:bg-accent-hover hover:border-accent-hover`;
+const btnSuccess = `${btnBase} border border-transparent bg-success-muted text-success hover:bg-success hover:text-white`;
+const btnDanger = `${btnBase} border border-transparent bg-danger-muted text-danger hover:bg-danger hover:text-white`;
+
+function detectActiveTemplate(text: string): string | null {
+  try {
+    const parsed = JSON.parse(text);
+    for (const t of POLICY_TEMPLATES) {
+      if (JSON.stringify(parsed) === JSON.stringify(t.policy)) return t.id;
+    }
+  } catch {
+    /* invalid JSON — no match */
+  }
+  return null;
+}
+
+const colorMap = {
+  success: {
+    border: "border-success",
+    bg: "bg-success-muted",
+    text: "text-success",
+    dot: "bg-success",
+  },
+  accent: {
+    border: "border-accent",
+    bg: "bg-accent/10",
+    text: "text-accent",
+    dot: "bg-accent",
+  },
+  danger: {
+    border: "border-danger",
+    bg: "bg-danger-muted",
+    text: "text-danger",
+    dot: "bg-danger",
+  },
+} as const;
+
 export function McpTab({
   clients,
   policy,
@@ -32,14 +140,19 @@ export function McpTab({
   onRefresh,
 }: McpTabProps) {
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const activeTemplateId = useMemo(() => detectActiveTemplate(policyText), [policyText]);
+
+  const applyTemplate = (t: PolicyTemplate) => {
+    onPolicyTextChange(JSON.stringify(t.policy, null, 2));
+  };
 
   return (
-    <div className="tab-content">
+    <div className="animate-fade-in">
       <PageHeader
         title="IDE Protection"
         description="Cursor, VS Code 등 AI 코딩 에디터가 내 컴퓨터를 마음대로 조작하지 못하도록 방어하고 감사 로그를 기록합니다."
       >
-        <button className="btn" onClick={onRefresh}>
+        <button className={btnDefault} onClick={onRefresh}>
           Refresh
         </button>
       </PageHeader>
@@ -72,25 +185,46 @@ export function McpTab({
             <ListItemCard
               key={c.name}
               badge={
-                <Badge variant={!c.installed ? "denied" : c.wrapped ? "approved" : "pending"}>
-                  {!c.installed ? "not found" : c.wrapped ? "Protected" : "Unprotected"}
+                <Badge
+                  variant={
+                    !c.installed
+                      ? "denied"
+                      : c.wrapped
+                        ? "approved"
+                        : "pending"
+                  }
+                >
+                  {!c.installed
+                    ? "not found"
+                    : c.wrapped
+                      ? "Protected"
+                      : "Unprotected"}
                 </Badge>
               }
               title={c.label}
               meta={
                 <>
                   {c.servers} server{c.servers !== 1 ? "s" : ""}
-                  {c.wrappedCount ? ` (${c.wrappedCount} wrapped)` : ""} &middot; {c.configPath}
+                  {c.wrappedCount
+                    ? ` (${c.wrappedCount} wrapped)`
+                    : ""}{" "}
+                  &middot; {c.configPath}
                 </>
               }
               actions={
                 c.installed && c.servers > 0 ? (
                   c.wrapped ? (
-                    <button className="btn btn-danger" onClick={() => onUnwrapClient(c.name)}>
+                    <button
+                      className={btnDanger}
+                      onClick={() => onUnwrapClient(c.name)}
+                    >
                       Remove
                     </button>
                   ) : (
-                    <button className="btn btn-success" onClick={() => onWrapClient(c.name)}>
+                    <button
+                      className={btnSuccess}
+                      onClick={() => onWrapClient(c.name)}
+                    >
                       Protect
                     </button>
                   )
@@ -101,16 +235,10 @@ export function McpTab({
         )}
       </Card>
 
-      <div style={{ display: "flex", justifyContent: "center", margin: "24px 0" }}>
+      <div className="flex justify-center my-6">
         <button
-          className="btn"
+          className="inline-flex items-center gap-1.5 py-[7px] px-3.5 rounded-sm text-[11px] font-medium cursor-pointer transition-all bg-transparent border border-dashed border-line text-content-muted hover:border-line-hover hover:text-content-secondary"
           onClick={() => setShowAdvanced(!showAdvanced)}
-          style={{
-            background: "transparent",
-            border: "1px dashed var(--border)",
-            fontSize: "11px",
-            color: "var(--text-muted)",
-          }}
         >
           {showAdvanced ? "Hide Advanced Settings" : "Show Advanced Settings"}
         </button>
@@ -121,39 +249,56 @@ export function McpTab({
           title="Policy Editor"
           headerRight={
             policy && (
-              <span className="card-header__hint">
-                {policy.exists ? policy.path : "No policy file — will be created on save"}
+              <span className="text-[11px] text-content-muted">
+                {policy.exists
+                  ? policy.path
+                  : "No policy file — will be created on save"}
               </span>
             )
           }
         >
-          <div
-            style={{
-              padding: "12px 16px",
-              background: "rgba(96, 165, 250, 0.1)",
-              border: "1px solid rgba(96, 165, 250, 0.2)",
-              borderRadius: "6px",
-              marginBottom: "16px",
-              fontSize: "12px",
-              color: "var(--text-primary)",
-              lineHeight: "1.5",
-            }}
-          >
-            💡 <strong>보안 규칙 설정:</strong> AI가 실행할 수 없는 위험한 명령어(예: bash)나 접근할
-            수 없는 폴더(예: /etc)를 설정합니다. 잘 모를 경우 기본값을 그대로 유지하는 것이
-            안전합니다.
+          <div className="py-3 px-4 bg-accent/10 border border-accent/20 rounded-sm mb-4 text-xs text-content-primary leading-relaxed">
+            <strong>보안 규칙 설정:</strong> AI가 실행할 수 없는 위험한
+            명령어(예: bash)나 접근할 수 없는 폴더(예: /etc)를 설정합니다. 잘
+            모를 경우 기본값을 그대로 유지하는 것이 안전합니다.
           </div>
+
+          {/* Template Selection */}
+          <div className="template-grid">
+            {POLICY_TEMPLATES.map((t) => {
+              const selected = activeTemplateId === t.id;
+              const c = colorMap[t.color];
+              return (
+                <button
+                  key={t.id}
+                  type="button"
+                  className={`template-card ${selected ? `template-card--selected ${c.border}` : ""}`}
+                  onClick={() => applyTemplate(t)}
+                >
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className={`inline-block w-2 h-2 rounded-full ${c.dot}`} />
+                    <span className={`text-xs font-semibold ${selected ? c.text : "text-content-primary"}`}>
+                      {t.name}
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-content-muted leading-snug">
+                    {t.description}
+                  </p>
+                </button>
+              );
+            })}
+          </div>
+
           <textarea
-            className="form-input policy-editor"
+            className="w-full min-h-[220px] font-mono text-xs leading-relaxed resize-y mb-3 py-2 px-2.5 bg-[#121212] border border-line rounded-sm text-content-primary outline-none transition-colors focus:border-accent focus-visible:ring-2 focus-visible:ring-accent"
             value={policyText}
             onChange={(e) => onPolicyTextChange(e.target.value)}
             placeholder={`{\n  "version": "1",\n  "default": {\n    "denied_tools": ["bash", "write_*"],\n    "denied_paths": ["/etc/*", "~/.ssh/*"],\n    "mode": "enforce"\n  }\n}`}
             spellCheck={false}
             aria-label="MCP policy JSON editor"
-            style={{ backgroundColor: "#121212" }}
           />
           <button
-            className={`btn btn-primary ${savingPolicy ? "btn--loading" : ""}`}
+            className={`${btnPrimary} ${savingPolicy ? "btn-loading" : ""}`}
             onClick={onSavePolicy}
             disabled={savingPolicy}
           >
@@ -165,7 +310,11 @@ export function McpTab({
       {/* MCP Audit Log */}
       <Card
         title="Audit Log"
-        headerRight={<span className="card-header__hint">Last {audit.length} entries</span>}
+        headerRight={
+          <span className="text-[11px] text-content-muted">
+            Last {audit.length} entries
+          </span>
+        }
       >
         {audit.length === 0 ? (
           <EmptyState
@@ -173,23 +322,23 @@ export function McpTab({
             description="AgentGuard가 AI 에이전트의 행동을 감시하면 여기에 기록됩니다."
           />
         ) : (
-          <div className="audit-scroll">
-            <table className="audit-table">
+          <div className="max-h-[400px] overflow-y-auto">
+            <table className="w-full border-collapse text-xs">
               <thead>
                 <tr>
-                  <th className="audit-th" scope="col">
+                  <th className="py-2 px-1.5 text-left text-content-muted font-medium border-b border-line">
                     Time
                   </th>
-                  <th className="audit-th" scope="col">
+                  <th className="py-2 px-1.5 text-left text-content-muted font-medium border-b border-line">
                     Tool
                   </th>
-                  <th className="audit-th" scope="col">
+                  <th className="py-2 px-1.5 text-left text-content-muted font-medium border-b border-line">
                     Decision
                   </th>
-                  <th className="audit-th" scope="col">
+                  <th className="py-2 px-1.5 text-left text-content-muted font-medium border-b border-line">
                     Rule
                   </th>
-                  <th className="audit-th" scope="col">
+                  <th className="py-2 px-1.5 text-left text-content-muted font-medium border-b border-line">
                     Agent
                   </th>
                 </tr>
@@ -197,11 +346,15 @@ export function McpTab({
               <tbody>
                 {audit.map((e, i) => (
                   <tr key={i}>
-                    <td className="audit-td audit-td--time">
-                      {e.ts ? new Date(e.ts).toLocaleTimeString() : "-"}
+                    <td className="py-1.5 px-1.5 border-b border-line text-content-muted whitespace-nowrap">
+                      {e.ts
+                        ? new Date(e.ts).toLocaleTimeString()
+                        : "-"}
                     </td>
-                    <td className="audit-td audit-td--tool">{e.tool || e.method}</td>
-                    <td className="audit-td">
+                    <td className="py-1.5 px-1.5 border-b border-line font-medium">
+                      {e.tool || e.method}
+                    </td>
+                    <td className="py-1.5 px-1.5 border-b border-line">
                       <Badge
                         variant={
                           e.decision === "pass"
@@ -214,8 +367,12 @@ export function McpTab({
                         {e.decision}
                       </Badge>
                     </td>
-                    <td className="audit-td audit-td--rule">{e.rule || "-"}</td>
-                    <td className="audit-td audit-td--agent">{e.agent || "-"}</td>
+                    <td className="py-1.5 px-1.5 border-b border-line text-content-secondary text-[11px]">
+                      {e.rule || "-"}
+                    </td>
+                    <td className="py-1.5 px-1.5 border-b border-line text-content-muted text-[11px]">
+                      {e.agent || "-"}
+                    </td>
                   </tr>
                 ))}
               </tbody>

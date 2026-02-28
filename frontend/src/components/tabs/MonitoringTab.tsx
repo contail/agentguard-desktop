@@ -1,5 +1,4 @@
 import type { ProxyStats } from "../../types";
-import { Card } from "../shared/Card";
 import { StatBox } from "../shared/StatBox";
 import { PageHeader } from "../shared/PageHeader";
 import { LoadingSpinner } from "../shared/LoadingSpinner";
@@ -107,67 +106,6 @@ const Icons = {
       <polyline points="12 6 12 12 16 14" />
     </svg>
   ),
-  eye: (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-      <circle cx="12" cy="12" r="3" />
-    </svg>
-  ),
-  lock: (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-      <path d="M7 11V7a5 5 0 0110 0v4" />
-    </svg>
-  ),
-  cpu: (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <rect x="4" y="4" width="16" height="16" rx="2" ry="2" />
-      <rect x="9" y="9" width="6" height="6" />
-      <line x1="9" y1="1" x2="9" y2="4" />
-      <line x1="15" y1="1" x2="15" y2="4" />
-      <line x1="9" y1="20" x2="9" y2="23" />
-      <line x1="15" y1="20" x2="15" y2="23" />
-      <line x1="20" y1="9" x2="23" y2="9" />
-      <line x1="20" y1="14" x2="23" y2="14" />
-      <line x1="1" y1="9" x2="4" y2="9" />
-      <line x1="1" y1="14" x2="4" y2="14" />
-    </svg>
-  ),
-  info: (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <circle cx="12" cy="12" r="10" />
-      <line x1="12" y1="16" x2="12" y2="12" />
-      <line x1="12" y1="8" x2="12.01" y2="8" />
-    </svg>
-  ),
   fingerprint: (
     <svg
       viewBox="0 0 24 24"
@@ -185,6 +123,9 @@ const Icons = {
   ),
 };
 
+const btnBase =
+  "inline-flex items-center gap-1.5 py-[7px] px-3.5 rounded-sm text-xs font-medium cursor-pointer transition-all border border-line bg-surface-card text-content-secondary hover:bg-surface-primary hover:border-line-hover hover:text-content-primary no-drag";
+
 export function MonitoringTab({
   stats,
   timeSince,
@@ -197,14 +138,14 @@ export function MonitoringTab({
   /* Daemon is offline → show hero empty state */
   if (daemonState !== "running") {
     return (
-      <div className="tab-content">
+      <div className="animate-fade-in">
         <PageHeader
           title="Dashboard"
           description="AgentGuard가 차단하거나 허용한 전체 보안 통계를 한눈에 확인합니다."
         />
-        <div className="empty-state--hero">
+        <div className="flex flex-col items-center justify-center py-20 px-10 text-center">
           <svg
-            className="empty-state__icon"
+            className="w-12 h-12 text-content-muted mb-5 opacity-50"
             viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"
@@ -214,8 +155,10 @@ export function MonitoringTab({
           >
             <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
           </svg>
-          <div className="empty-state__title">AgentGuard가 오프라인입니다</div>
-          <div className="empty-state__desc">
+          <div className="text-base font-semibold text-content-secondary mb-2">
+            AgentGuard가 오프라인입니다
+          </div>
+          <div className="text-[13px] text-content-muted max-w-xs leading-relaxed">
             좌측 하단의 [Start] 버튼을 눌러 AI 에이전트 보호를 시작하세요.
           </div>
         </div>
@@ -224,13 +167,13 @@ export function MonitoringTab({
   }
 
   return (
-    <div className="tab-content">
+    <div className="animate-fade-in">
       <PageHeader
         title="Dashboard"
         description="AgentGuard가 차단하거나 허용한 전체 보안 통계를 한눈에 확인합니다."
       >
-        <span className="page-header updated-text">{timeSince}</span>
-        <button className="btn" onClick={onRefresh}>
+        <span className="text-[11px] text-content-muted">{timeSince}</span>
+        <button className={btnBase} onClick={onRefresh}>
           Refresh
         </button>
       </PageHeader>
@@ -246,8 +189,8 @@ export function MonitoringTab({
 
       {stats && (
         <>
-          {/* Hero Stats (Low Density) */}
-          <div className="hero-stats-grid">
+          {/* Hero Stats */}
+          <div className="grid grid-cols-3 gap-4">
             <StatBox
               label="Total Requests"
               value={stats.totalRequests}
@@ -270,17 +213,27 @@ export function MonitoringTab({
             />
           </div>
 
-          <div className="progress-container" style={{ marginBottom: 32, marginTop: 16 }}>
-            <span className="stat-label stat-label--inline">Block Rate</span>
-            <div className="progress-track">
-              <div className="progress-fill" style={{ width: `${blockRateNum}%` }} />
+          {/* Block Rate Progress */}
+          <div className="col-span-full bg-white/[0.02] border border-line rounded-lg p-3.5 flex items-center gap-3.5 mb-8 mt-4">
+            <span className="text-[10px] font-medium text-content-muted uppercase tracking-wide">
+              Block Rate
+            </span>
+            <div className="flex-1 h-1.5 bg-line rounded-full overflow-hidden">
+              <div
+                className="h-full bg-gradient-to-r from-success via-warning to-danger rounded-full transition-all duration-[600ms]"
+                style={{ width: `${blockRateNum}%` }}
+              />
             </div>
-            <span className="progress-value">{stats.blockRate ?? "-"}</span>
+            <span className="text-sm font-bold min-w-[45px] text-right">
+              {stats.blockRate ?? "-"}
+            </span>
           </div>
 
-          <div className="settings-section-title">Detailed Metrics</div>
+          <div className="text-[11px] font-semibold text-content-muted uppercase tracking-wide mb-3 mt-5">
+            Detailed Metrics
+          </div>
 
-          <div className="stats-grid">
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(130px,1fr))] gap-2.5">
             <StatBox
               label="Stage 1 Blocks"
               value={stats.stage1Blocked}

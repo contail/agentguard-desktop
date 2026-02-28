@@ -1,0 +1,38 @@
+---
+description: React component conventions for AgentGuard Desktop
+globs: "**/*.tsx"
+alwaysApply: false
+---
+
+# Component Patterns
+
+## Architecture
+
+- `App.tsx` is the orchestrator: state, data loaders, event handlers only. No UI markup for tab contents.
+- Each tab lives in `components/tabs/<Name>Tab.tsx` and receives data/callbacks via props.
+- Reusable UI primitives live in `components/shared/` (Card, Badge, Toggle, StatBox, etc.).
+- Types are centralized in `types.ts`. Hooks in `hooks/`.
+
+## Naming
+
+- Components: PascalCase (`StatBox.tsx`, `McpTab.tsx`)
+- Props interfaces: `<ComponentName>Props`
+- Event handler props: `on<Action>` (e.g. `onSaveConfig`, `onRefresh`)
+
+## Shared Components API
+
+- `Card`: title (required), headerRight (optional), children
+- `PageHeader`: title, description (optional), children (action buttons)
+- `EmptyState`: title, description, icon (SVG), variant ("default" | "error" | "hero"), action
+- `StatBox`: label, value, icon, description, colorClass, variant ("stat" | "info")
+- `Badge`: variant ("pending" | "approved" | "denied" | "info"), children
+- `Toggle`: checked, onChange, label (for accessibility)
+- `ListItemCard`: badge, title, meta, actions
+
+## User-Facing Text
+
+- Use plain language, not developer jargon
+- Tab names: Dashboard, Configuration, Pending Actions, IDE Protection
+- Button labels: "Protect" (not "Wrap"), "Remove" (not "Unwrap")
+- Badge labels: "Protected" / "Unprotected" (not "wrapped" / "unwrapped")
+- Always include a description prop on PageHeader explaining what the tab does
