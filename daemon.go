@@ -126,7 +126,6 @@ func (d *Daemon) startDirect() error {
 	cmd := exec.Command(binPath)
 	cmd.Env = append(os.Environ(),
 		"AGENTGUARD_GATE_ENABLED=true",
-		"AGENTGUARD_LLM_ENABLED=true",
 	)
 
 	logFile, err := os.OpenFile(d.logFilePath(), os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
@@ -189,10 +188,8 @@ type githubAsset struct {
 
 func platformBinaryName() string {
 	switch {
-	case runtime.GOOS == "darwin" && runtime.GOARCH == "arm64":
+	case runtime.GOOS == "darwin":
 		return "agentguard-mac-arm64"
-	case runtime.GOOS == "darwin" && runtime.GOARCH == "amd64":
-		return "agentguard-mac-amd64"
 	case runtime.GOOS == "linux" && runtime.GOARCH == "amd64":
 		return "agentguard-linux-amd64"
 	case runtime.GOOS == "windows" && runtime.GOARCH == "amd64":
