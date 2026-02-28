@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { BrowserOpenURL } from "../../../wailsjs/runtime/runtime";
 import type { AgConfig } from "../../types";
 import { Card } from "../shared/Card";
@@ -43,6 +44,8 @@ export function SettingsTab({
   onCheckUpdate,
   onUpdateCore,
 }: SettingsTabProps) {
+  const [showAdvanced, setShowAdvanced] = useState(false);
+
   return (
     <div className="animate-fade-in">
       <PageHeader
@@ -285,7 +288,7 @@ export function SettingsTab({
               </div>
             </div>
 
-            <div className="mt-6">
+            <div className="mt-6 flex items-center gap-3">
               <button
                 className={`${btnPrimary} ${savingConfig ? "btn-loading" : ""}`}
                 onClick={onSaveConfig}
@@ -293,36 +296,44 @@ export function SettingsTab({
               >
                 Save Settings
               </button>
+              <button
+                className={btnDefault}
+                onClick={() => setShowAdvanced(!showAdvanced)}
+              >
+                {showAdvanced ? "Hide Advanced" : "Show Advanced"}
+              </button>
             </div>
-          </Card>
 
-          <div className="text-[11px] font-semibold text-content-muted uppercase tracking-wide mb-3 mt-5">
-            OpenClaw Integration
-          </div>
-          <Card title="OpenClaw Target Server">
-            <div className="flex flex-col gap-4">
-              <div className="flex flex-col gap-1.5 mb-4">
-                <span className="flex flex-col text-[13px] font-medium text-content-primary tracking-tight">
-                  Base URL
-                  <span className="text-[11px] text-content-muted font-normal mt-0.5">
-                    The upstream endpoint for OpenClaw API requests.
+            {showAdvanced && (
+              <div className="mt-5 pt-5 border-t border-line flex flex-col gap-4">
+                <div className="text-[11px] font-semibold text-content-muted uppercase tracking-wide">
+                  Advanced
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <span className="flex flex-col text-[13px] font-medium text-content-primary tracking-tight">
+                    Upstream Base URL
+                    <span className="text-[11px] text-content-muted font-normal mt-0.5">
+                      LLM API 요청의 최종 목적지 서버 주소입니다.
+                    </span>
                   </span>
-                </span>
-                <input
-                  className="py-2 px-2.5 bg-surface-input border border-line rounded-sm text-content-primary text-[13px] font-sans outline-none transition-colors focus:border-accent focus-visible:ring-2 focus-visible:ring-accent"
-                  value={ocBaseUrl}
-                  onChange={(e) => onOcBaseUrlChange(e.target.value)}
-                  placeholder="https://api.anthropic.com"
-                />
+                  <input
+                    className="py-2 px-2.5 bg-surface-input border border-line rounded-sm text-content-primary text-[13px] font-sans outline-none transition-colors focus:border-accent focus-visible:ring-2 focus-visible:ring-accent"
+                    value={ocBaseUrl}
+                    onChange={(e) => onOcBaseUrlChange(e.target.value)}
+                    placeholder="https://api.anthropic.com"
+                  />
+                </div>
+                <div>
+                  <button
+                    className={`${btnPrimary} ${savingOcConfig ? "btn-loading" : ""}`}
+                    onClick={onSaveOcConfig}
+                    disabled={savingOcConfig}
+                  >
+                    Save
+                  </button>
+                </div>
               </div>
-            </div>
-            <button
-              className={`${btnPrimary} ${savingOcConfig ? "btn-loading" : ""}`}
-              onClick={onSaveOcConfig}
-              disabled={savingOcConfig}
-            >
-              Save OpenClaw Settings
-            </button>
+            )}
           </Card>
 
         </>
