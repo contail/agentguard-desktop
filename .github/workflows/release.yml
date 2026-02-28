@@ -43,7 +43,6 @@ jobs:
       - name: Create arm64 DMG
         run: |
           APP_PATH=$(find build/bin -name "*.app" -maxdepth 1 | head -1)
-          DMG_NAME="AgentGuard-Desktop-${{ steps.version.outputs.version }}-macos-arm64.dmg"
           create-dmg \
             --volname "AgentGuard Desktop" \
             --volicon "build/appicon.png" \
@@ -53,7 +52,7 @@ jobs:
             --icon "$(basename "$APP_PATH")" 150 185 \
             --app-drop-link 450 185 \
             --hide-extension "$(basename "$APP_PATH")" \
-            "build/bin/${DMG_NAME}" \
+            "build/bin/AgentGuard-Desktop-macos-arm64.dmg" \
             "$APP_PATH" || true
           mkdir -p out && mv build/bin/*.dmg out/
 
@@ -64,7 +63,6 @@ jobs:
       - name: Create amd64 DMG
         run: |
           APP_PATH=$(find build/bin -name "*.app" -maxdepth 1 | head -1)
-          DMG_NAME="AgentGuard-Desktop-${{ steps.version.outputs.version }}-macos-amd64.dmg"
           create-dmg \
             --volname "AgentGuard Desktop" \
             --volicon "build/appicon.png" \
@@ -74,7 +72,7 @@ jobs:
             --icon "$(basename "$APP_PATH")" 150 185 \
             --app-drop-link 450 185 \
             --hide-extension "$(basename "$APP_PATH")" \
-            "build/bin/${DMG_NAME}" \
+            "build/bin/AgentGuard-Desktop-macos-amd64.dmg" \
             "$APP_PATH" || true
           mv build/bin/*.dmg out/
 
@@ -111,7 +109,7 @@ jobs:
       - name: Rename artifact
         shell: bash
         run: |
-          mv build/bin/agentguard-desktop.exe "build/bin/AgentGuard-Desktop-${{ steps.version.outputs.version }}-windows-amd64.exe"
+          mv build/bin/agentguard-desktop.exe "build/bin/AgentGuard-Desktop-windows-amd64.exe"
 
       - name: Upload exe
         uses: actions/upload-artifact@v4
@@ -137,32 +135,3 @@ jobs:
         with:
           generate_release_notes: true
           files: artifacts/*
-
-      - name: Update website downloads
-        env:
-          GH_PAT: ${{ secrets.WEBSITE_DEPLOY_TOKEN }}
-        run: |
-          git clone https://x-access-token:${GH_PAT}@github.com/contail/agentguard-website.git website
-          mkdir -p website/public/downloads
-
-          # Zip each artifact with a stable (version-less) name
-          for f in artifacts/*macos-arm64*.dmg; do
-            [ -f "$f" ] && zip -j website/public/downloads/AgentGuard-Desktop-macos-arm64.zip "$f"
-          done
-          for f in artifacts/*macos-amd64*.dmg; do
-            [ -f "$f" ] && zip -j website/public/downloads/AgentGuard-Desktop-macos-amd64.zip "$f"
-          done
-          for f in artifacts/*windows*.exe; do
-            [ -f "$f" ] && zip -j website/public/downloads/AgentGuard-Desktop-windows-amd64.zip "$f"
-          done
-
-          cd website
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add public/downloads/
-          if git diff --cached --quiet; then
-            echo "No download changes to commit"
-          else
-            git commit -m "Update desktop app downloads to ${GITHUB_REF_NAME}"
-            git push
-          fi
