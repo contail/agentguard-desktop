@@ -14,14 +14,7 @@ env:
 
 jobs:
   build-macos:
-    strategy:
-      matrix:
-        include:
-          - runner: macos-14
-            arch: arm64
-          - runner: macos-13
-            arch: amd64
-    runs-on: ${{ matrix.runner }}
+    runs-on: macos-14
     steps:
       - uses: actions/checkout@v4
 
@@ -40,16 +33,17 @@ jobs:
         id: version
         run: echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
 
-      - name: Build
-        run: wails build -clean -ldflags "-X main.AppVersion=${{ steps.version.outputs.version }}"
-
       - name: Install create-dmg
         run: brew install create-dmg
 
-      - name: Create DMG
+      # Build ARM64
+      - name: Build arm64
+        run: wails build -clean -ldflags "-X main.AppVersion=${{ steps.version.outputs.version }}"
+
+      - name: Create arm64 DMG
         run: |
           APP_PATH=$(find build/bin -name "*.app" -maxdepth 1 | head -1)
-          DMG_NAME="AgentGuard-Desktop-${{ steps.version.outputs.version }}-macos-${{ matrix.arch }}.dmg"
+          DMG_NAME="AgentGuard-Desktop-${{ steps.version.outputs.version }}-macos-arm64.dmg"
           create-dmg \
             --volname "AgentGuard Desktop" \
             --volicon "build/appicon.png" \
@@ -61,13 +55,34 @@ jobs:
             --hide-extension "$(basename "$APP_PATH")" \
             "build/bin/${DMG_NAME}" \
             "$APP_PATH" || true
-          ls -la build/bin/*.dmg
+          mkdir -p out && mv build/bin/*.dmg out/
 
-      - name: Upload DMG
+      # Build AMD64 (cross-compile)
+      - name: Build amd64
+        run: GOARCH=amd64 wails build -clean -ldflags "-X main.AppVersion=${{ steps.version.outputs.version }}"
+
+      - name: Create amd64 DMG
+        run: |
+          APP_PATH=$(find build/bin -name "*.app" -maxdepth 1 | head -1)
+          DMG_NAME="AgentGuard-Desktop-${{ steps.version.outputs.version }}-macos-amd64.dmg"
+          create-dmg \
+            --volname "AgentGuard Desktop" \
+            --volicon "build/appicon.png" \
+            --window-pos 200 120 \
+            --window-size 600 400 \
+            --icon-size 100 \
+            --icon "$(basename "$APP_PATH")" 150 185 \
+            --app-drop-link 450 185 \
+            --hide-extension "$(basename "$APP_PATH")" \
+            "build/bin/${DMG_NAME}" \
+            "$APP_PATH" || true
+          mv build/bin/*.dmg out/
+
+      - name: Upload DMGs
         uses: actions/upload-artifact@v4
         with:
-          name: dmg-macos-${{ matrix.arch }}
-          path: build/bin/*.dmg
+          name: dmg-macos
+          path: out/*.dmg
 
   build-windows:
     runs-on: windows-latest
