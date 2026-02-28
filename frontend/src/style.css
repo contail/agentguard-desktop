@@ -37,6 +37,14 @@
     background-repeat: no-repeat;
     background-position: right 8px center;
     background-size: 16px 16px;
+    -webkit-appearance: none;
+  }
+  .select-arrow:focus {
+    outline: none;
+  }
+  .select-arrow option {
+    background: #18181a;
+    color: #ededed;
   }
 
   /* Template grid & cards */

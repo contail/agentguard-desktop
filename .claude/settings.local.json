@@ -12,7 +12,12 @@
       "Bash(npm run build 2>&1 | tail -10)",
       "Bash(npm install -D tailwindcss@3 postcss autoprefixer 2>&1 | tail -5)",
       "Bash(npx tsc --noEmit 2>&1 | head -30)",
-      "Bash(npm run build 2>&1)"
+      "Bash(npm run build 2>&1)",
+      "Bash(npm run dev)",
+      "Bash(export PATH=\"$HOME/go/bin:$PATH\" && wails dev 2>&1)",
+      "Bash(grep -r \"contail/AgentGuard\" /Users/sangjin/agentguard-desktop --include=\"*.go\" --include=\"*.md\" --include=\"*.json\" 2>/dev/null | head -10)",
+      "Bash(git checkout -b ui/polish-mcp-layout-and-select-fix)",
+      "Bash(git add frontend/src/components/tabs/McpTab.tsx frontend/src/components/tabs/SettingsTab.tsx frontend/src/style.css frontend/package.json.md5 .claude/settings.local.json)"
     ]
   }
 }

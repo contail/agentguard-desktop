@@ -104,11 +104,12 @@ export function SettingsTab({
                   </span>
                 </span>
                 <select
-                  className="py-2 px-2.5 pr-8 bg-surface-input border border-line rounded-sm text-content-primary text-[13px] font-sans outline-none cursor-pointer appearance-none select-arrow focus:border-accent focus-visible:ring-2 focus-visible:ring-accent"
+                  className="py-2 px-2.5 pr-8 bg-surface-input border border-line rounded-sm text-content-primary text-[13px] font-sans outline-none cursor-pointer appearance-none select-arrow"
                   value={config.gateMode}
-                  onChange={(e) =>
-                    onConfigChange({ ...config, gateMode: e.target.value })
-                  }
+                  onChange={(e) => {
+                    onConfigChange({ ...config, gateMode: e.target.value });
+                    e.target.blur();
+                  }}
                 >
                   <option value="enforce">
                     Enforce (Block malicious requests)
@@ -180,11 +181,12 @@ export function SettingsTab({
                   </span>
                 </span>
                 <select
-                  className="py-2 px-2.5 pr-8 bg-surface-input border border-line rounded-sm text-content-primary text-[13px] font-sans outline-none cursor-pointer appearance-none select-arrow focus:border-accent focus-visible:ring-2 focus-visible:ring-accent"
+                  className="py-2 px-2.5 pr-8 bg-surface-input border border-line rounded-sm text-content-primary text-[13px] font-sans outline-none cursor-pointer appearance-none select-arrow"
                   value={config.llmMode}
-                  onChange={(e) =>
-                    onConfigChange({ ...config, llmMode: e.target.value })
-                  }
+                  onChange={(e) => {
+                    onConfigChange({ ...config, llmMode: e.target.value });
+                    e.target.blur();
+                  }}
                 >
                   <option value="monitor">
                     Monitor (Log all tool calls silently)
@@ -255,65 +257,6 @@ export function SettingsTab({
             </button>
           </Card>
 
-          <div className="text-[11px] font-semibold text-content-muted uppercase tracking-wide mb-3 mt-5">
-            Advanced
-          </div>
-          <Card title="Advanced Configuration">
-            <div className="flex flex-col gap-4">
-              <div className="flex flex-col gap-1.5">
-                <span className="flex flex-col text-[13px] font-medium text-content-primary tracking-tight">
-                  Max Body Size
-                  <span className="text-[11px] text-content-muted font-normal mt-0.5">
-                    Maximum HTTP request body size (bytes).
-                  </span>
-                </span>
-                <div className="flex items-center justify-between py-2 px-2.5 bg-surface-input border border-line rounded-sm">
-                  <span className="text-[13px] text-content-secondary">
-                    {config.maxBodySize}
-                  </span>
-                </div>
-              </div>
-              <div className="flex flex-col gap-1.5">
-                <span className="flex flex-col text-[13px] font-medium text-content-primary tracking-tight">
-                  Gate URL
-                  <span className="text-[11px] text-content-muted font-normal mt-0.5">
-                    Endpoint for Stage 2 trust evaluation.
-                  </span>
-                </span>
-                <div className="flex items-center justify-between py-2 px-2.5 bg-surface-input border border-line rounded-sm">
-                  <span className="text-[13px] text-content-secondary">
-                    {config.gateURL}
-                  </span>
-                </div>
-              </div>
-              <div className="flex flex-col gap-1.5">
-                <span className="flex flex-col text-[13px] font-medium text-content-primary tracking-tight">
-                  Gate Timeout (ms)
-                  <span className="text-[11px] text-content-muted font-normal mt-0.5">
-                    Maximum wait time for Stage 2 evaluation.
-                  </span>
-                </span>
-                <div className="flex items-center justify-between py-2 px-2.5 bg-surface-input border border-line rounded-sm">
-                  <span className="text-[13px] text-content-secondary">
-                    {config.gateTimeoutMs}
-                  </span>
-                </div>
-              </div>
-              <div className="flex flex-col gap-1.5">
-                <span className="flex flex-col text-[13px] font-medium text-content-primary tracking-tight">
-                  Approval Timeout (ms)
-                  <span className="text-[11px] text-content-muted font-normal mt-0.5">
-                    Wait time before pending actions auto-expire.
-                  </span>
-                </span>
-                <div className="flex items-center justify-between py-2 px-2.5 bg-surface-input border border-line rounded-sm">
-                  <span className="text-[13px] text-content-secondary">
-                    {config.approvalTimeoutMs}
-                  </span>
-                </div>
-              </div>
-            </div>
-          </Card>
         </>
       )}
 
