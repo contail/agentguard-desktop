@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-const AppVersion = "1.0.0"
+var AppVersion = "1.0.0"
 
 type App struct {
 	ctx    context.Context

@@ -9,5 +9,12 @@
   "author": {
     "name": "contail",
     "email": "qkrtkdwls2121@gmail.com"
+  },
+  "info": {
+    "companyName": "Contail",
+    "productName": "AgentGuard Desktop",
+    "productVersion": "1.0.0",
+    "copyright": "Copyright © 2026 Contail",
+    "comments": "Reverse proxy firewall + LLM Gateway for AI agents"
   }
 }
