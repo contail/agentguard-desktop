@@ -230,7 +230,7 @@ export function MonitoringTab({
           </div>
 
           <div className="text-[11px] font-semibold text-content-muted uppercase tracking-wide mb-3 mt-5">
-            Detailed Metrics
+            Inbound Protection
           </div>
 
           <div className="grid grid-cols-[repeat(auto-fill,minmax(130px,1fr))] gap-2.5">
@@ -247,16 +247,43 @@ export function MonitoringTab({
               description="원격 AI 평가로 차단"
             />
             <StatBox
-              label="PII Sanitized"
-              value={stats.llmGateway?.piiSanitized ?? "-"}
-              icon={Icons.fingerprint}
-              description="Personal data hidden"
-            />
-            <StatBox
               label="Uptime"
               value={stats.uptime}
               icon={Icons.clock}
               description="Since last restart"
+            />
+          </div>
+
+          <div className="text-[11px] font-semibold text-content-muted uppercase tracking-wide mb-3 mt-5">
+            LLM Gateway
+          </div>
+
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(130px,1fr))] gap-2.5">
+            <StatBox
+              label="LLM Requests"
+              value={stats.llmGateway?.total ?? 0}
+              icon={Icons.activity}
+              description="아웃바운드 LLM 호출"
+            />
+            <StatBox
+              label="Flagged"
+              value={stats.llmGateway?.flagged ?? 0}
+              colorClass="warning"
+              icon={Icons.alertTriangle}
+              description="위험 패턴 감지"
+            />
+            <StatBox
+              label="Blocked"
+              value={stats.llmGateway?.blocked ?? 0}
+              colorClass="danger"
+              icon={Icons.slash}
+              description="LLM 호출 차단"
+            />
+            <StatBox
+              label="PII Sanitized"
+              value={stats.llmGateway?.piiSanitized ?? 0}
+              icon={Icons.fingerprint}
+              description="개인정보 자동 마스킹"
             />
           </div>
         </>
