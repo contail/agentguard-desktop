@@ -98,3 +98,19 @@ cd frontend && npx oxfmt src/
 - Oxfmt for frontend formatting
 - No trailing whitespace
 - Logger and comments only where necessary
+
+## Cross-Repository Dependencies
+
+이 레포는 `contail/AgentGuard` 코어의 HTTP API에 의존한다.
+
+| 코어에서 바뀐 것 | 이 레포에서 할 일 |
+|---|---|
+| API 엔드포인트 추가/변경 | `app.go`에 새 바인딩 메서드 추가 + React 탭/컴포넌트 수정 |
+| API 응답 JSON 구조 변경 | `types.ts` 인터페이스 수정 + 해당 Tab 컴포넌트 수정 |
+| 새 환경변수 추가 | `daemon.go`의 `cmd.Env`에 추가 + SettingsTab에 UI 노출 |
+| 새 CLI 서브커맨드 | 해당 기능의 UI 래퍼 (새 탭 또는 기존 탭에 섹션 추가) |
+| 버전 범프 + Release | 수정 불필요 (CheckForUpdate가 자동 감지) |
+
+관련 레포:
+- 코어: `contail/AgentGuard` — Go 바이너리, API 스펙 원본
+- 웹사이트: `contail/agentguard-website` — Next.js 마케팅/문서 사이트
