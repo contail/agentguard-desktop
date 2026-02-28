@@ -72,85 +72,104 @@ export function SettingsTab({
 
       {config && (
         <>
+          <div className="settings-section-title" style={{ marginTop: 0 }}>
+            Proxy & Security
+          </div>
           <Card title="AgentGuard Configuration">
-            <div className="form-grid">
+            <div className="form-grid--single">
               <div className="form-field">
-                <span className="form-label">Proxy Port</span>
+                <span className="form-label">
+                  Proxy Port{" "}
+                  <span className="form-label-desc">
+                    The port AgentGuard listens on for inbound traffic.
+                  </span>
+                </span>
                 <div className="info-row">
                   <span className="info-row__value">{config.proxyPort}</span>
                 </div>
               </div>
+
               <div className="form-field">
-                <span className="form-label">LLM Port</span>
-                <div className="info-row">
-                  <span className="info-row__value">{config.llmPort}</span>
-                </div>
-              </div>
-              <div className="form-field">
-                <span className="form-label">Max Body Size</span>
-                <div className="info-row">
-                  <span className="info-row__value">{config.maxBodySize}</span>
-                </div>
-              </div>
-              <div className="form-field">
-                <span className="form-label">Gate URL</span>
-                <div className="info-row">
-                  <span className="info-row__value">{config.gateURL}</span>
-                </div>
-              </div>
-              <div className="form-field">
-                <span className="form-label">Gate Timeout (ms)</span>
-                <div className="info-row">
-                  <span className="info-row__value">{config.gateTimeoutMs}</span>
-                </div>
-              </div>
-              <div className="form-field">
-                <span className="form-label">Approval Timeout (ms)</span>
-                <div className="info-row">
-                  <span className="info-row__value">{config.approvalTimeoutMs}</span>
-                </div>
-              </div>
-              <div className="form-field">
-                <span className="form-label">Gate Mode</span>
+                <span className="form-label">
+                  Gate Mode{" "}
+                  <span className="form-label-desc">Trust evaluation enforcement policy.</span>
+                </span>
                 <select
                   className="form-select"
                   value={config.gateMode}
                   onChange={(e) => onConfigChange({ ...config, gateMode: e.target.value })}
                 >
-                  <option value="enforce">enforce</option>
-                  <option value="monitor">monitor</option>
+                  <option value="enforce">Enforce (Block malicious requests)</option>
+                  <option value="monitor">Monitor (Log only, do not block)</option>
                 </select>
               </div>
+
               <div className="form-field">
-                <span className="form-label">LLM Mode</span>
-                <select
-                  className="form-select"
-                  value={config.llmMode}
-                  onChange={(e) => onConfigChange({ ...config, llmMode: e.target.value })}
-                >
-                  <option value="monitor">monitor</option>
-                  <option value="enforce">enforce</option>
-                  <option value="confirm">confirm</option>
-                </select>
-              </div>
-              <div className="form-field">
-                <span className="form-label">Gate Enabled</span>
+                <span className="form-label">
+                  Gate Enabled{" "}
+                  <span className="form-label-desc">
+                    Enable Stage 2 remote AI trust evaluation.
+                  </span>
+                </span>
                 <Toggle
                   checked={config.gateEnabled}
                   onChange={(v) => onConfigChange({ ...config, gateEnabled: v })}
                   label="Toggle gate enabled"
                 />
               </div>
+
               <div className="form-field">
-                <span className="form-label">Gate Fail Open</span>
+                <span className="form-label">
+                  Gate Fail Open{" "}
+                  <span className="form-label-desc">
+                    Allow requests if the Gate API is unreachable.
+                  </span>
+                </span>
                 <Toggle
                   checked={config.gateFailOpen}
                   onChange={(v) => onConfigChange({ ...config, gateFailOpen: v })}
                   label="Toggle gate fail open"
                 />
               </div>
+            </div>
+          </Card>
+
+          <div className="settings-section-title">LLM Gateway</div>
+          <Card title="LLM Traffic Monitoring">
+            <div className="form-grid--single">
               <div className="form-field">
-                <span className="form-label">PII Sanitization</span>
+                <span className="form-label">
+                  LLM Port{" "}
+                  <span className="form-label-desc">Port for outbound LLM API interception.</span>
+                </span>
+                <div className="info-row">
+                  <span className="info-row__value">{config.llmPort}</span>
+                </div>
+              </div>
+
+              <div className="form-field">
+                <span className="form-label">
+                  LLM Mode{" "}
+                  <span className="form-label-desc">How to handle outgoing LLM tool calls.</span>
+                </span>
+                <select
+                  className="form-select"
+                  value={config.llmMode}
+                  onChange={(e) => onConfigChange({ ...config, llmMode: e.target.value })}
+                >
+                  <option value="monitor">Monitor (Log all tool calls silently)</option>
+                  <option value="enforce">Enforce (Block calls matching deny rules)</option>
+                  <option value="confirm">Confirm (Require manual approval for all calls)</option>
+                </select>
+              </div>
+
+              <div className="form-field">
+                <span className="form-label">
+                  PII Sanitization{" "}
+                  <span className="form-label-desc">
+                    Automatically redact personal data from LLM prompts.
+                  </span>
+                </span>
                 <Toggle
                   checked={config.piiEnabled}
                   onChange={(v) => onConfigChange({ ...config, piiEnabled: v })}
@@ -158,24 +177,35 @@ export function SettingsTab({
                 />
               </div>
             </div>
-            <button
-              className={`btn btn-primary ${savingConfig ? "btn--loading" : ""}`}
-              onClick={onSaveConfig}
-              disabled={savingConfig}
-            >
-              Save Settings
-            </button>
+
+            <div style={{ marginTop: 24 }}>
+              <button
+                className={`btn btn-primary ${savingConfig ? "btn--loading" : ""}`}
+                onClick={onSaveConfig}
+                disabled={savingConfig}
+              >
+                Save Settings
+              </button>
+            </div>
           </Card>
 
-          <Card title="OpenClaw Settings">
-            <div className="form-field form-field--mb">
-              <span className="form-label">Base URL</span>
-              <input
-                className="form-input"
-                value={ocBaseUrl}
-                onChange={(e) => onOcBaseUrlChange(e.target.value)}
-                placeholder="https://api.anthropic.com"
-              />
+          <div className="settings-section-title">OpenClaw Integration</div>
+          <Card title="OpenClaw Target Server">
+            <div className="form-grid--single">
+              <div className="form-field form-field--mb">
+                <span className="form-label">
+                  Base URL{" "}
+                  <span className="form-label-desc">
+                    The upstream endpoint for OpenClaw API requests.
+                  </span>
+                </span>
+                <input
+                  className="form-input"
+                  value={ocBaseUrl}
+                  onChange={(e) => onOcBaseUrlChange(e.target.value)}
+                  placeholder="https://api.anthropic.com"
+                />
+              </div>
             </div>
             <button
               className={`btn btn-primary ${savingOcConfig ? "btn--loading" : ""}`}
@@ -184,6 +214,50 @@ export function SettingsTab({
             >
               Save OpenClaw Settings
             </button>
+          </Card>
+
+          <div className="settings-section-title">Advanced</div>
+          <Card title="Advanced Configuration">
+            <div className="form-grid--single">
+              <div className="form-field">
+                <span className="form-label">
+                  Max Body Size{" "}
+                  <span className="form-label-desc">Maximum HTTP request body size (bytes).</span>
+                </span>
+                <div className="info-row">
+                  <span className="info-row__value">{config.maxBodySize}</span>
+                </div>
+              </div>
+              <div className="form-field">
+                <span className="form-label">
+                  Gate URL{" "}
+                  <span className="form-label-desc">Endpoint for Stage 2 trust evaluation.</span>
+                </span>
+                <div className="info-row">
+                  <span className="info-row__value">{config.gateURL}</span>
+                </div>
+              </div>
+              <div className="form-field">
+                <span className="form-label">
+                  Gate Timeout (ms){" "}
+                  <span className="form-label-desc">Maximum wait time for Stage 2 evaluation.</span>
+                </span>
+                <div className="info-row">
+                  <span className="info-row__value">{config.gateTimeoutMs}</span>
+                </div>
+              </div>
+              <div className="form-field">
+                <span className="form-label">
+                  Approval Timeout (ms){" "}
+                  <span className="form-label-desc">
+                    Wait time before pending actions auto-expire.
+                  </span>
+                </span>
+                <div className="info-row">
+                  <span className="info-row__value">{config.approvalTimeoutMs}</span>
+                </div>
+              </div>
+            </div>
           </Card>
         </>
       )}

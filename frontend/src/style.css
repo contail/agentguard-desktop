@@ -525,10 +525,16 @@ body {
   margin-bottom: 16px;
 }
 
+.form-grid--single {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
 .form-field {
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: 6px;
 }
 
 .form-field--mb {
@@ -536,11 +542,21 @@ body {
 }
 
 .form-label {
-  font-size: 11px;
+  display: flex;
+  flex-direction: column;
+  font-size: 13px;
   font-weight: 500;
+  color: var(--text-primary);
+  letter-spacing: 0.1px;
+}
+
+.form-label-desc {
+  font-size: 11px;
   color: var(--text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.3px;
+  font-weight: 400;
+  margin-top: 2px;
+  text-transform: none;
+  letter-spacing: normal;
 }
 
 .form-input {
