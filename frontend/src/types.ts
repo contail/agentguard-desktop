@@ -1,4 +1,4 @@
-export type Tab = "monitoring" | "settings" | "approvals" | "mcp" | "logs";
+export type Tab = "monitoring" | "settings" | "approvals" | "mcp";
 
 export interface DaemonStatus {
   state: string;

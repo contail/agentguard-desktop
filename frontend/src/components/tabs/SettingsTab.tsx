@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import type { AgConfig } from "../../types";
 import { Card } from "../shared/Card";
 import { Toggle } from "../shared/Toggle";
@@ -14,6 +14,7 @@ interface SettingsTabProps {
   onOcBaseUrlChange: (url: string) => void;
   onSaveOcConfig: () => void;
   savingOcConfig: boolean;
+  daemonState: string;
 }
 
 const btnBase =
@@ -30,8 +31,45 @@ export function SettingsTab({
   onOcBaseUrlChange,
   onSaveOcConfig,
   savingOcConfig,
+  daemonState,
 }: SettingsTabProps) {
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [showLogs, setShowLogs] = useState(false);
+  const [logLines, setLogLines] = useState<string[]>([]);
+  const [logFilter, setLogFilter] = useState("");
+  const [autoScroll, setAutoScroll] = useState(true);
+  const logBottomRef = useRef<HTMLDivElement>(null);
+
+  const loadLogs = useCallback(async () => {
+    try {
+      const raw = await window.go.main.App.GetLogs(500);
+      const data = JSON.parse(raw);
+      if (Array.isArray(data.lines)) setLogLines(data.lines);
+    } catch {}
+  }, []);
+
+  useEffect(() => {
+    if (!showLogs || daemonState !== "running") return;
+    loadLogs();
+    const id = setInterval(loadLogs, 2000);
+    return () => clearInterval(id);
+  }, [showLogs, daemonState, loadLogs]);
+
+  useEffect(() => {
+    if (autoScroll && showLogs) logBottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [logLines, autoScroll, showLogs]);
+
+  const filteredLogs = logFilter
+    ? logLines.filter((l) => l.toLowerCase().includes(logFilter.toLowerCase()))
+    : logLines;
+
+  const colorizeLog = (line: string) => {
+    if (line.includes("[LLM-BLOCKED]") || line.includes("BLOCKED")) return "text-danger";
+    if (line.includes("[LLM-MONITOR]") || line.includes("WARN")) return "text-warning";
+    if (line.includes("[LLM-PASS]") || line.includes("PASS")) return "text-success";
+    if (line.includes("[LLM-CONFIRM]")) return "text-accent";
+    return "text-content-secondary";
+  };
 
   return (
     <div className="animate-fade-in">
@@ -326,6 +364,71 @@ export function SettingsTab({
         </>
       )}
 
+      {/* Troubleshooting */}
+      <div className="mt-6">
+        <button
+          className="flex items-center gap-2 w-full py-3 px-4 rounded border border-line bg-surface-card text-content-muted text-xs font-medium cursor-pointer transition-all hover:border-line-hover hover:text-content-secondary"
+          onClick={() => setShowLogs(!showLogs)}
+        >
+          <svg
+            className={`w-3.5 h-3.5 transition-transform ${showLogs ? "rotate-90" : ""}`}
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <polyline points="9 18 15 12 9 6" />
+          </svg>
+          Troubleshooting: Daemon Logs
+        </button>
+
+        {showLogs && (
+          <div className="mt-2">
+            <Card title="Daemon Logs">
+              {daemonState !== "running" ? (
+                <EmptyState
+                  title="AgentGuard가 오프라인입니다"
+                  description="데몬을 시작하면 로그가 표시됩니다."
+                />
+              ) : (
+                <>
+                  <div className="flex items-center gap-2 mb-3">
+                    <input
+                      className="py-1.5 px-2.5 bg-surface-input border border-line rounded-sm text-content-primary text-[12px] font-mono outline-none flex-1 focus:border-accent"
+                      placeholder="Filter..."
+                      value={logFilter}
+                      onChange={(e) => setLogFilter(e.target.value)}
+                    />
+                    <button
+                      className={`${btnDefault} ${autoScroll ? "!bg-accent !text-white !border-accent" : ""}`}
+                      onClick={() => setAutoScroll(!autoScroll)}
+                    >
+                      Auto-scroll
+                    </button>
+                    <button className={btnDefault} onClick={loadLogs}>
+                      Refresh
+                    </button>
+                  </div>
+                  <div className="max-h-[350px] bg-black/20 border border-line rounded-lg overflow-y-auto font-mono text-[11px] leading-[1.6] p-3 scrollbar-thin">
+                    {filteredLogs.length === 0 ? (
+                      <div className="text-content-muted text-center py-10">No log entries</div>
+                    ) : (
+                      filteredLogs.map((line, i) => (
+                        <div key={i} className={`${colorizeLog(line)} whitespace-pre-wrap break-all`}>
+                          {line}
+                        </div>
+                      ))
+                    )}
+                    <div ref={logBottomRef} />
+                  </div>
+                </>
+              )}
+            </Card>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
