@@ -213,6 +213,14 @@ function App() {
   }, [refreshAll, loadStats, loadDaemonStatus]);
 
   useEffect(() => {
+    if (tab === "mcp") {
+      loadMCPAudit();
+      const mcpInterval = setInterval(loadMCPAudit, 5000);
+      return () => clearInterval(mcpInterval);
+    }
+  }, [tab, loadMCPAudit]);
+
+  useEffect(() => {
     if (tab === "settings") {
       loadConfig();
       loadOcConfig();
