@@ -95,14 +95,33 @@ const btnPrimary = `${btnBase} border border-accent bg-accent text-white hover:b
 const btnSuccess = `${btnBase} border border-transparent bg-success-muted text-success hover:bg-success hover:text-white`;
 const btnDanger = `${btnBase} border border-transparent bg-danger-muted text-danger hover:bg-danger hover:text-white`;
 
+function arraysEqual(a: string[], b: string[]): boolean {
+  if (a.length !== b.length) return false;
+  const sa = [...a].sort();
+  const sb = [...b].sort();
+  return sa.every((v, i) => v === sb[i]);
+}
+
 function detectActiveTemplate(text: string): string | null {
   try {
     const parsed = JSON.parse(text);
+    const def = parsed?.default;
+    if (!def) return null;
+    const tools: string[] = Array.isArray(def.denied_tools) ? def.denied_tools : [];
+    const paths: string[] = Array.isArray(def.denied_paths) ? def.denied_paths : [];
+    const mode: string = def.mode || "";
     for (const t of POLICY_TEMPLATES) {
-      if (JSON.stringify(parsed) === JSON.stringify(t.policy)) return t.id;
+      const td = t.policy.default;
+      if (
+        mode === td.mode &&
+        arraysEqual(tools, td.denied_tools) &&
+        arraysEqual(paths, td.denied_paths)
+      ) {
+        return t.id;
+      }
     }
   } catch {
-    /* invalid JSON — no match */
+    /* invalid JSON */
   }
   return null;
 }
