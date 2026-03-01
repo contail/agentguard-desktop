@@ -485,7 +485,7 @@ export function McpTab({
                     <button
                       key={t.id}
                       type="button"
-                      className={`template-card ${selected ? `template-card--selected ${c.border}` : ""}`}
+                      className={`template-card ${selected ? `template-card--selected ${c.border} ${c.bg}` : ""}`}
                       onClick={() => applyTemplate(t)}
                     >
                       <div className="flex items-center gap-2 mb-1">
@@ -493,6 +493,14 @@ export function McpTab({
                         <span className={`text-xs font-semibold ${selected ? c.text : "text-content-primary"}`}>
                           {t.name}
                         </span>
+                        {selected && (
+                          <span className={`ml-auto text-[10px] font-medium ${c.text} flex items-center gap-1`}>
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" className="w-3 h-3">
+                              <polyline points="20 6 9 17 4 12" />
+                            </svg>
+                            Active
+                          </span>
+                        )}
                       </div>
                       <p className="text-[11px] text-content-muted leading-snug">
                         {t.description}
